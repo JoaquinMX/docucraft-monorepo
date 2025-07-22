@@ -1,0 +1,34 @@
+---
+interface Props {
+  name: string;
+  icon: string;
+  path: string;
+  href: string;
+  id: string;
+}
+
+const { name, icon, path, href, id } = Astro.props;
+
+const currentPath = Astro.url.pathname;
+const isActive = currentPath.includes(id);
+---
+
+<a
+  href={href}
+  class={`flex items-center gap-3 px-3 py-2 rounded-lg ${
+    isActive ? "bg-[#223649]" : "bg-[#101a23]"
+  }`}
+>
+  <div class="text-white" data-icon={icon} data-size="24px" data-weight="fill">
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24px"
+      height="24px"
+      fill="currentColor"
+      viewBox="0 0 256 256"
+    >
+      <path d={path}></path>
+    </svg>
+  </div>
+  <p class="text-white text-sm font-medium leading-normal">{name}</p>
+</a>

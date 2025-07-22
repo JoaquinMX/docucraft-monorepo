@@ -1,0 +1,44 @@
+---
+import DiagramDocSelect from "@/components/DiagramDocSelect.astro";
+import { diagrams } from "@/data/mockdata";
+
+interface Props {
+  projectId: string;
+}
+
+const { projectId } = Astro.props;
+---
+
+<div class="layout-content-container flex flex-col w-80">
+  <div
+    class="flex h-full min-h-[700px] flex-col justify-between bg-[#101a23] p-4"
+  >
+    <div class="flex flex-col gap-4">
+      <a href={`/projects/${projectId}`}>
+        <h1
+          class="text-white text-base font-medium leading-normal hover:text-blue-300 cursor-pointer transition-colors"
+        >
+          Project Docs
+        </h1>
+      </a>
+      <div class="flex flex-col gap-2">
+        {
+          diagrams.map((diagram) => (
+            <DiagramDocSelect
+              name={diagram.name}
+              icon={diagram.icon}
+              path={diagram.path}
+              id={diagram.id}
+              href={`/projects/${projectId}/diagram/${diagram.id}`}
+            />
+          ))
+        }
+      </div>
+    </div>
+    <button
+      class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-[#0c7ff2] text-white text-sm font-bold leading-normal tracking-[0.015em]"
+    >
+      <span class="truncate">New Doc</span>
+    </button>
+  </div>
+</div>

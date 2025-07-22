@@ -1,0 +1,888 @@
+---
+import CustomH1 from "@/components/CustomH1.astro";
+import MainLayout from "@layouts/MainLayout.astro";
+---
+
+<MainLayout>
+  <div class="px-40 flex flex-1 justify-center py-5">
+    <div class="layout-content-container flex flex-col max-w-[960px] flex-1">
+      <CustomH1 title="Simple, transparent pricing" />
+      <div
+        class="grid grid-cols-[repeat(auto-fit,minmax(228px,1fr))] gap-2.5 px-4 py-3 @3xl:grid-cols-4"
+      >
+        <div
+          class="flex flex-1 flex-col gap-4 rounded-xl border border-solid border-[#cedce8] bg-slate-50 p-6"
+        >
+          <div class="flex flex-col gap-1">
+            <h1 class="text-[#0d151c] text-base font-bold leading-tight">
+              Free
+            </h1>
+            <p class="flex items-baseline gap-1 text-[#0d151c]">
+              <span
+                class="text-[#0d151c] text-4xl font-black leading-tight tracking-[-0.033em]"
+                >$0</span
+              >
+              <span class="text-[#0d151c] text-base font-bold leading-tight"
+                >per month</span
+              >
+            </p>
+          </div>
+          <button
+            class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-4 bg-[#e7eef4] text-[#0d151c] text-sm font-bold leading-normal tracking-[0.015em]"
+          >
+            <span class="truncate">Get started</span>
+          </button>
+          <div class="flex flex-col gap-2">
+            <div
+              class="text-[13px] font-normal leading-normal flex gap-3 text-[#0d151c]"
+            >
+              <div
+                class="text-[#0d151c]"
+                data-icon="Check"
+                data-size="20px"
+                data-weight="regular"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20px"
+                  height="20px"
+                  fill="currentColor"
+                  viewBox="0 0 256 256"
+                >
+                  <path
+                    d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"
+                  ></path>
+                </svg>
+              </div>
+              Unlimited public docs
+            </div>
+            <div
+              class="text-[13px] font-normal leading-normal flex gap-3 text-[#0d151c]"
+            >
+              <div
+                class="text-[#0d151c]"
+                data-icon="Check"
+                data-size="20px"
+                data-weight="regular"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20px"
+                  height="20px"
+                  fill="currentColor"
+                  viewBox="0 0 256 256"
+                >
+                  <path
+                    d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"
+                  ></path>
+                </svg>
+              </div>
+              Unlimited private docs
+            </div>
+            <div
+              class="text-[13px] font-normal leading-normal flex gap-3 text-[#0d151c]"
+            >
+              <div
+                class="text-[#0d151c]"
+                data-icon="Check"
+                data-size="20px"
+                data-weight="regular"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20px"
+                  height="20px"
+                  fill="currentColor"
+                  viewBox="0 0 256 256"
+                >
+                  <path
+                    d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"
+                  ></path>
+                </svg>
+              </div>
+              Unlimited team members
+            </div>
+            <div
+              class="text-[13px] font-normal leading-normal flex gap-3 text-[#0d151c]"
+            >
+              <div
+                class="text-[#0d151c]"
+                data-icon="Check"
+                data-size="20px"
+                data-weight="regular"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20px"
+                  height="20px"
+                  fill="currentColor"
+                  viewBox="0 0 256 256"
+                >
+                  <path
+                    d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"
+                  ></path>
+                </svg>
+              </div>
+              Unlimited projects
+            </div>
+            <div
+              class="text-[13px] font-normal leading-normal flex gap-3 text-[#0d151c]"
+            >
+              <div
+                class="text-[#0d151c]"
+                data-icon="Check"
+                data-size="20px"
+                data-weight="regular"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20px"
+                  height="20px"
+                  fill="currentColor"
+                  viewBox="0 0 256 256"
+                >
+                  <path
+                    d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"
+                  ></path>
+                </svg>
+              </div>
+              Community support
+            </div>
+          </div>
+        </div>
+        <div
+          class="flex flex-1 flex-col gap-4 rounded-xl border border-solid border-[#cedce8] bg-slate-50 p-6"
+        >
+          <div class="flex flex-col gap-1">
+            <div class="flex items-center justify-between">
+              <h1 class="text-[#0d151c] text-base font-bold leading-tight">
+                Pro
+              </h1>
+              <p
+                class="text-slate-50 text-xs font-medium leading-normal tracking-[0.015em] rounded-full bg-[#2090f3] px-3 py-[3px] text-center"
+              >
+                Most popular
+              </p>
+            </div>
+            <p class="flex items-baseline gap-1 text-[#0d151c]">
+              <span
+                class="text-[#0d151c] text-4xl font-black leading-tight tracking-[-0.033em]"
+                >$19</span
+              >
+              <span class="text-[#0d151c] text-base font-bold leading-tight"
+                >per month</span
+              >
+            </p>
+          </div>
+          <button
+            class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-4 bg-[#e7eef4] text-[#0d151c] text-sm font-bold leading-normal tracking-[0.015em]"
+          >
+            <span class="truncate">Get started</span>
+          </button>
+          <div class="flex flex-col gap-2">
+            <div
+              class="text-[13px] font-normal leading-normal flex gap-3 text-[#0d151c]"
+            >
+              <div
+                class="text-[#0d151c]"
+                data-icon="Check"
+                data-size="20px"
+                data-weight="regular"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20px"
+                  height="20px"
+                  fill="currentColor"
+                  viewBox="0 0 256 256"
+                >
+                  <path
+                    d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"
+                  ></path>
+                </svg>
+              </div>
+              Unlimited public docs
+            </div>
+            <div
+              class="text-[13px] font-normal leading-normal flex gap-3 text-[#0d151c]"
+            >
+              <div
+                class="text-[#0d151c]"
+                data-icon="Check"
+                data-size="20px"
+                data-weight="regular"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20px"
+                  height="20px"
+                  fill="currentColor"
+                  viewBox="0 0 256 256"
+                >
+                  <path
+                    d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"
+                  ></path>
+                </svg>
+              </div>
+              Unlimited private docs
+            </div>
+            <div
+              class="text-[13px] font-normal leading-normal flex gap-3 text-[#0d151c]"
+            >
+              <div
+                class="text-[#0d151c]"
+                data-icon="Check"
+                data-size="20px"
+                data-weight="regular"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20px"
+                  height="20px"
+                  fill="currentColor"
+                  viewBox="0 0 256 256"
+                >
+                  <path
+                    d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"
+                  ></path>
+                </svg>
+              </div>
+              Unlimited team members
+            </div>
+            <div
+              class="text-[13px] font-normal leading-normal flex gap-3 text-[#0d151c]"
+            >
+              <div
+                class="text-[#0d151c]"
+                data-icon="Check"
+                data-size="20px"
+                data-weight="regular"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20px"
+                  height="20px"
+                  fill="currentColor"
+                  viewBox="0 0 256 256"
+                >
+                  <path
+                    d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"
+                  ></path>
+                </svg>
+              </div>
+              Unlimited projects
+            </div>
+            <div
+              class="text-[13px] font-normal leading-normal flex gap-3 text-[#0d151c]"
+            >
+              <div
+                class="text-[#0d151c]"
+                data-icon="Check"
+                data-size="20px"
+                data-weight="regular"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20px"
+                  height="20px"
+                  fill="currentColor"
+                  viewBox="0 0 256 256"
+                >
+                  <path
+                    d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"
+                  ></path>
+                </svg>
+              </div>
+              Community support
+            </div>
+            <div
+              class="text-[13px] font-normal leading-normal flex gap-3 text-[#0d151c]"
+            >
+              <div
+                class="text-[#0d151c]"
+                data-icon="Check"
+                data-size="20px"
+                data-weight="regular"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20px"
+                  height="20px"
+                  fill="currentColor"
+                  viewBox="0 0 256 256"
+                >
+                  <path
+                    d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"
+                  ></path>
+                </svg>
+              </div>
+              Priority support
+            </div>
+            <div
+              class="text-[13px] font-normal leading-normal flex gap-3 text-[#0d151c]"
+            >
+              <div
+                class="text-[#0d151c]"
+                data-icon="Check"
+                data-size="20px"
+                data-weight="regular"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20px"
+                  height="20px"
+                  fill="currentColor"
+                  viewBox="0 0 256 256"
+                >
+                  <path
+                    d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"
+                  ></path>
+                </svg>
+              </div>
+              Advanced analytics
+            </div>
+            <div
+              class="text-[13px] font-normal leading-normal flex gap-3 text-[#0d151c]"
+            >
+              <div
+                class="text-[#0d151c]"
+                data-icon="Check"
+                data-size="20px"
+                data-weight="regular"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20px"
+                  height="20px"
+                  fill="currentColor"
+                  viewBox="0 0 256 256"
+                >
+                  <path
+                    d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"
+                  ></path>
+                </svg>
+              </div>
+              Custom branding
+            </div>
+          </div>
+        </div>
+        <div
+          class="flex flex-1 flex-col gap-4 rounded-xl border border-solid border-[#cedce8] bg-slate-50 p-6"
+        >
+          <div class="flex flex-col gap-1">
+            <h1 class="text-[#0d151c] text-base font-bold leading-tight">
+              Enterprise
+            </h1>
+            <span
+              class="text-[#0d151c] text-4xl font-black leading-tight tracking-[-0.033em]"
+              >Contact us</span
+            >
+          </div>
+          <button
+            class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-4 bg-[#e7eef4] text-[#0d151c] text-sm font-bold leading-normal tracking-[0.015em]"
+          >
+            <span class="truncate">Contact sales</span>
+          </button>
+          <div class="flex flex-col gap-2">
+            <div
+              class="text-[13px] font-normal leading-normal flex gap-3 text-[#0d151c]"
+            >
+              <div
+                class="text-[#0d151c]"
+                data-icon="Check"
+                data-size="20px"
+                data-weight="regular"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20px"
+                  height="20px"
+                  fill="currentColor"
+                  viewBox="0 0 256 256"
+                >
+                  <path
+                    d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"
+                  ></path>
+                </svg>
+              </div>
+              Unlimited public docs
+            </div>
+            <div
+              class="text-[13px] font-normal leading-normal flex gap-3 text-[#0d151c]"
+            >
+              <div
+                class="text-[#0d151c]"
+                data-icon="Check"
+                data-size="20px"
+                data-weight="regular"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20px"
+                  height="20px"
+                  fill="currentColor"
+                  viewBox="0 0 256 256"
+                >
+                  <path
+                    d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"
+                  ></path>
+                </svg>
+              </div>
+              Unlimited private docs
+            </div>
+            <div
+              class="text-[13px] font-normal leading-normal flex gap-3 text-[#0d151c]"
+            >
+              <div
+                class="text-[#0d151c]"
+                data-icon="Check"
+                data-size="20px"
+                data-weight="regular"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20px"
+                  height="20px"
+                  fill="currentColor"
+                  viewBox="0 0 256 256"
+                >
+                  <path
+                    d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"
+                  ></path>
+                </svg>
+              </div>
+              Unlimited team members
+            </div>
+            <div
+              class="text-[13px] font-normal leading-normal flex gap-3 text-[#0d151c]"
+            >
+              <div
+                class="text-[#0d151c]"
+                data-icon="Check"
+                data-size="20px"
+                data-weight="regular"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20px"
+                  height="20px"
+                  fill="currentColor"
+                  viewBox="0 0 256 256"
+                >
+                  <path
+                    d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"
+                  ></path>
+                </svg>
+              </div>
+              Unlimited projects
+            </div>
+            <div
+              class="text-[13px] font-normal leading-normal flex gap-3 text-[#0d151c]"
+            >
+              <div
+                class="text-[#0d151c]"
+                data-icon="Check"
+                data-size="20px"
+                data-weight="regular"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20px"
+                  height="20px"
+                  fill="currentColor"
+                  viewBox="0 0 256 256"
+                >
+                  <path
+                    d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"
+                  ></path>
+                </svg>
+              </div>
+              Community support
+            </div>
+            <div
+              class="text-[13px] font-normal leading-normal flex gap-3 text-[#0d151c]"
+            >
+              <div
+                class="text-[#0d151c]"
+                data-icon="Check"
+                data-size="20px"
+                data-weight="regular"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20px"
+                  height="20px"
+                  fill="currentColor"
+                  viewBox="0 0 256 256"
+                >
+                  <path
+                    d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"
+                  ></path>
+                </svg>
+              </div>
+              Priority support
+            </div>
+            <div
+              class="text-[13px] font-normal leading-normal flex gap-3 text-[#0d151c]"
+            >
+              <div
+                class="text-[#0d151c]"
+                data-icon="Check"
+                data-size="20px"
+                data-weight="regular"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20px"
+                  height="20px"
+                  fill="currentColor"
+                  viewBox="0 0 256 256"
+                >
+                  <path
+                    d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"
+                  ></path>
+                </svg>
+              </div>
+              Advanced analytics
+            </div>
+            <div
+              class="text-[13px] font-normal leading-normal flex gap-3 text-[#0d151c]"
+            >
+              <div
+                class="text-[#0d151c]"
+                data-icon="Check"
+                data-size="20px"
+                data-weight="regular"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20px"
+                  height="20px"
+                  fill="currentColor"
+                  viewBox="0 0 256 256"
+                >
+                  <path
+                    d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"
+                  ></path>
+                </svg>
+              </div>
+              Custom branding
+            </div>
+            <div
+              class="text-[13px] font-normal leading-normal flex gap-3 text-[#0d151c]"
+            >
+              <div
+                class="text-[#0d151c]"
+                data-icon="Check"
+                data-size="20px"
+                data-weight="regular"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20px"
+                  height="20px"
+                  fill="currentColor"
+                  viewBox="0 0 256 256"
+                >
+                  <path
+                    d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"
+                  ></path>
+                </svg>
+              </div>
+              Dedicated support
+            </div>
+            <div
+              class="text-[13px] font-normal leading-normal flex gap-3 text-[#0d151c]"
+            >
+              <div
+                class="text-[#0d151c]"
+                data-icon="Check"
+                data-size="20px"
+                data-weight="regular"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20px"
+                  height="20px"
+                  fill="currentColor"
+                  viewBox="0 0 256 256"
+                >
+                  <path
+                    d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"
+                  ></path>
+                </svg>
+              </div>
+              Custom integrations
+            </div>
+          </div>
+        </div>
+      </div>
+      <h2
+        class="text-[#0d151c] text-[22px] font-bold leading-tight tracking-[-0.015em] px-4 pb-3 pt-5"
+      >
+        Compare features
+      </h2>
+      <div class="px-4 py-3 @container">
+        <div
+          class="flex overflow-hidden rounded-xl border border-[#cedce8] bg-slate-50"
+        >
+          <table class="flex-1">
+            <thead>
+              <tr class="bg-slate-50">
+                <th
+                  class="table-01c4a076-ac3d-4908-9bfe-e89c2063c3e8-column-120 px-4 py-3 text-left text-[#0d151c] w-[400px] text-sm font-medium leading-normal"
+                  >Feature</th
+                >
+                <th
+                  class="table-01c4a076-ac3d-4908-9bfe-e89c2063c3e8-column-240 px-4 py-3 text-left text-[#0d151c] w-[400px] text-sm font-medium leading-normal"
+                  >Free</th
+                >
+                <th
+                  class="table-01c4a076-ac3d-4908-9bfe-e89c2063c3e8-column-360 px-4 py-3 text-left text-[#0d151c] w-[400px] text-sm font-medium leading-normal"
+                  >Pro</th
+                >
+                <th
+                  class="table-01c4a076-ac3d-4908-9bfe-e89c2063c3e8-column-480 px-4 py-3 text-left text-[#0d151c] w-[400px] text-sm font-medium leading-normal"
+                >
+                  Enterprise
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-t border-t-[#cedce8]">
+                <td
+                  class="table-01c4a076-ac3d-4908-9bfe-e89c2063c3e8-column-120 h-[72px] px-4 py-2 w-[400px] text-[#0d151c] text-sm font-normal leading-normal"
+                >
+                  Public documentation
+                </td>
+                <td
+                  class="table-01c4a076-ac3d-4908-9bfe-e89c2063c3e8-column-240 h-[72px] px-4 py-2 w-[400px] text-[#49769c] text-sm font-normal leading-normal"
+                >
+                  Unlimited
+                </td>
+                <td
+                  class="table-01c4a076-ac3d-4908-9bfe-e89c2063c3e8-column-360 h-[72px] px-4 py-2 w-[400px] text-[#49769c] text-sm font-normal leading-normal"
+                >
+                  Unlimited
+                </td>
+                <td
+                  class="table-01c4a076-ac3d-4908-9bfe-e89c2063c3e8-column-480 h-[72px] px-4 py-2 w-[400px] text-[#49769c] text-sm font-normal leading-normal"
+                >
+                  Unlimited
+                </td>
+              </tr>
+              <tr class="border-t border-t-[#cedce8]">
+                <td
+                  class="table-01c4a076-ac3d-4908-9bfe-e89c2063c3e8-column-120 h-[72px] px-4 py-2 w-[400px] text-[#0d151c] text-sm font-normal leading-normal"
+                >
+                  Private documentation
+                </td>
+                <td
+                  class="table-01c4a076-ac3d-4908-9bfe-e89c2063c3e8-column-240 h-[72px] px-4 py-2 w-[400px] text-[#49769c] text-sm font-normal leading-normal"
+                >
+                  Unlimited
+                </td>
+                <td
+                  class="table-01c4a076-ac3d-4908-9bfe-e89c2063c3e8-column-360 h-[72px] px-4 py-2 w-[400px] text-[#49769c] text-sm font-normal leading-normal"
+                >
+                  Unlimited
+                </td>
+                <td
+                  class="table-01c4a076-ac3d-4908-9bfe-e89c2063c3e8-column-480 h-[72px] px-4 py-2 w-[400px] text-[#49769c] text-sm font-normal leading-normal"
+                >
+                  Unlimited
+                </td>
+              </tr>
+              <tr class="border-t border-t-[#cedce8]">
+                <td
+                  class="table-01c4a076-ac3d-4908-9bfe-e89c2063c3e8-column-120 h-[72px] px-4 py-2 w-[400px] text-[#0d151c] text-sm font-normal leading-normal"
+                >
+                  Team members
+                </td>
+                <td
+                  class="table-01c4a076-ac3d-4908-9bfe-e89c2063c3e8-column-240 h-[72px] px-4 py-2 w-[400px] text-[#49769c] text-sm font-normal leading-normal"
+                >
+                  Unlimited
+                </td>
+                <td
+                  class="table-01c4a076-ac3d-4908-9bfe-e89c2063c3e8-column-360 h-[72px] px-4 py-2 w-[400px] text-[#49769c] text-sm font-normal leading-normal"
+                >
+                  Unlimited
+                </td>
+                <td
+                  class="table-01c4a076-ac3d-4908-9bfe-e89c2063c3e8-column-480 h-[72px] px-4 py-2 w-[400px] text-[#49769c] text-sm font-normal leading-normal"
+                >
+                  Unlimited
+                </td>
+              </tr>
+              <tr class="border-t border-t-[#cedce8]">
+                <td
+                  class="table-01c4a076-ac3d-4908-9bfe-e89c2063c3e8-column-120 h-[72px] px-4 py-2 w-[400px] text-[#0d151c] text-sm font-normal leading-normal"
+                  >Projects</td
+                >
+                <td
+                  class="table-01c4a076-ac3d-4908-9bfe-e89c2063c3e8-column-240 h-[72px] px-4 py-2 w-[400px] text-[#49769c] text-sm font-normal leading-normal"
+                >
+                  Unlimited
+                </td>
+                <td
+                  class="table-01c4a076-ac3d-4908-9bfe-e89c2063c3e8-column-360 h-[72px] px-4 py-2 w-[400px] text-[#49769c] text-sm font-normal leading-normal"
+                >
+                  Unlimited
+                </td>
+                <td
+                  class="table-01c4a076-ac3d-4908-9bfe-e89c2063c3e8-column-480 h-[72px] px-4 py-2 w-[400px] text-[#49769c] text-sm font-normal leading-normal"
+                >
+                  Unlimited
+                </td>
+              </tr>
+              <tr class="border-t border-t-[#cedce8]">
+                <td
+                  class="table-01c4a076-ac3d-4908-9bfe-e89c2063c3e8-column-120 h-[72px] px-4 py-2 w-[400px] text-[#0d151c] text-sm font-normal leading-normal"
+                >
+                  Community support
+                </td>
+                <td
+                  class="table-01c4a076-ac3d-4908-9bfe-e89c2063c3e8-column-240 h-[72px] px-4 py-2 w-[400px] text-[#49769c] text-sm font-normal leading-normal"
+                  >Included</td
+                >
+                <td
+                  class="table-01c4a076-ac3d-4908-9bfe-e89c2063c3e8-column-360 h-[72px] px-4 py-2 w-[400px] text-[#49769c] text-sm font-normal leading-normal"
+                  >Included</td
+                >
+                <td
+                  class="table-01c4a076-ac3d-4908-9bfe-e89c2063c3e8-column-480 h-[72px] px-4 py-2 w-[400px] text-[#49769c] text-sm font-normal leading-normal"
+                  >Included</td
+                >
+              </tr>
+              <tr class="border-t border-t-[#cedce8]">
+                <td
+                  class="table-01c4a076-ac3d-4908-9bfe-e89c2063c3e8-column-120 h-[72px] px-4 py-2 w-[400px] text-[#0d151c] text-sm font-normal leading-normal"
+                >
+                  Priority support
+                </td>
+                <td
+                  class="table-01c4a076-ac3d-4908-9bfe-e89c2063c3e8-column-240 h-[72px] px-4 py-2 w-[400px] text-[#49769c] text-sm font-normal leading-normal"
+                >
+                  Not included
+                </td>
+                <td
+                  class="table-01c4a076-ac3d-4908-9bfe-e89c2063c3e8-column-360 h-[72px] px-4 py-2 w-[400px] text-[#49769c] text-sm font-normal leading-normal"
+                  >Included</td
+                >
+                <td
+                  class="table-01c4a076-ac3d-4908-9bfe-e89c2063c3e8-column-480 h-[72px] px-4 py-2 w-[400px] text-[#49769c] text-sm font-normal leading-normal"
+                  >Included</td
+                >
+              </tr>
+              <tr class="border-t border-t-[#cedce8]">
+                <td
+                  class="table-01c4a076-ac3d-4908-9bfe-e89c2063c3e8-column-120 h-[72px] px-4 py-2 w-[400px] text-[#0d151c] text-sm font-normal leading-normal"
+                >
+                  Advanced analytics
+                </td>
+                <td
+                  class="table-01c4a076-ac3d-4908-9bfe-e89c2063c3e8-column-240 h-[72px] px-4 py-2 w-[400px] text-[#49769c] text-sm font-normal leading-normal"
+                >
+                  Not included
+                </td>
+                <td
+                  class="table-01c4a076-ac3d-4908-9bfe-e89c2063c3e8-column-360 h-[72px] px-4 py-2 w-[400px] text-[#49769c] text-sm font-normal leading-normal"
+                  >Included</td
+                >
+                <td
+                  class="table-01c4a076-ac3d-4908-9bfe-e89c2063c3e8-column-480 h-[72px] px-4 py-2 w-[400px] text-[#49769c] text-sm font-normal leading-normal"
+                  >Included</td
+                >
+              </tr>
+              <tr class="border-t border-t-[#cedce8]">
+                <td
+                  class="table-01c4a076-ac3d-4908-9bfe-e89c2063c3e8-column-120 h-[72px] px-4 py-2 w-[400px] text-[#0d151c] text-sm font-normal leading-normal"
+                >
+                  Custom branding
+                </td>
+                <td
+                  class="table-01c4a076-ac3d-4908-9bfe-e89c2063c3e8-column-240 h-[72px] px-4 py-2 w-[400px] text-[#49769c] text-sm font-normal leading-normal"
+                >
+                  Not included
+                </td>
+                <td
+                  class="table-01c4a076-ac3d-4908-9bfe-e89c2063c3e8-column-360 h-[72px] px-4 py-2 w-[400px] text-[#49769c] text-sm font-normal leading-normal"
+                  >Included</td
+                >
+                <td
+                  class="table-01c4a076-ac3d-4908-9bfe-e89c2063c3e8-column-480 h-[72px] px-4 py-2 w-[400px] text-[#49769c] text-sm font-normal leading-normal"
+                  >Included</td
+                >
+              </tr>
+              <tr class="border-t border-t-[#cedce8]">
+                <td
+                  class="table-01c4a076-ac3d-4908-9bfe-e89c2063c3e8-column-120 h-[72px] px-4 py-2 w-[400px] text-[#0d151c] text-sm font-normal leading-normal"
+                >
+                  Dedicated support
+                </td>
+                <td
+                  class="table-01c4a076-ac3d-4908-9bfe-e89c2063c3e8-column-240 h-[72px] px-4 py-2 w-[400px] text-[#49769c] text-sm font-normal leading-normal"
+                >
+                  Not included
+                </td>
+                <td
+                  class="table-01c4a076-ac3d-4908-9bfe-e89c2063c3e8-column-360 h-[72px] px-4 py-2 w-[400px] text-[#49769c] text-sm font-normal leading-normal"
+                >
+                  Not included
+                </td>
+                <td
+                  class="table-01c4a076-ac3d-4908-9bfe-e89c2063c3e8-column-480 h-[72px] px-4 py-2 w-[400px] text-[#49769c] text-sm font-normal leading-normal"
+                  >Included</td
+                >
+              </tr>
+              <tr class="border-t border-t-[#cedce8]">
+                <td
+                  class="table-01c4a076-ac3d-4908-9bfe-e89c2063c3e8-column-120 h-[72px] px-4 py-2 w-[400px] text-[#0d151c] text-sm font-normal leading-normal"
+                >
+                  Custom integrations
+                </td>
+                <td
+                  class="table-01c4a076-ac3d-4908-9bfe-e89c2063c3e8-column-240 h-[72px] px-4 py-2 w-[400px] text-[#49769c] text-sm font-normal leading-normal"
+                >
+                  Not included
+                </td>
+                <td
+                  class="table-01c4a076-ac3d-4908-9bfe-e89c2063c3e8-column-360 h-[72px] px-4 py-2 w-[400px] text-[#49769c] text-sm font-normal leading-normal"
+                >
+                  Not included
+                </td>
+                <td
+                  class="table-01c4a076-ac3d-4908-9bfe-e89c2063c3e8-column-480 h-[72px] px-4 py-2 w-[400px] text-[#49769c] text-sm font-normal leading-normal"
+                  >Included</td
+                >
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <style>
+          @container (max-width:120px) {
+            .table-01c4a076-ac3d-4908-9bfe-e89c2063c3e8-column-120 {
+              display: none;
+            }
+          }
+          @container (max-width:240px) {
+            .table-01c4a076-ac3d-4908-9bfe-e89c2063c3e8-column-240 {
+              display: none;
+            }
+          }
+          @container (max-width:360px) {
+            .table-01c4a076-ac3d-4908-9bfe-e89c2063c3e8-column-360 {
+              display: none;
+            }
+          }
+          @container (max-width:480px) {
+            .table-01c4a076-ac3d-4908-9bfe-e89c2063c3e8-column-480 {
+              display: none;
+            }
+          }
+        </style>
+      </div>
+    </div>
+  </div>
+</MainLayout>

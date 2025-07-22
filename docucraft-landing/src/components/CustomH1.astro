@@ -1,0 +1,15 @@
+---
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+---
+
+<div class="flex flex-wrap justify-between gap-3 p-4">
+  <p
+    class="text-[#0d151c] tracking-light text-[32px] font-bold leading-tight min-w-72"
+  >
+    {title}
+  </p>
+</div>

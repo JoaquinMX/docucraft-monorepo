@@ -1,0 +1,14 @@
+---
+interface Props {
+  text: string;
+  href: string;
+}
+const { text, href } = Astro.props;
+---
+
+<a
+  class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-8 px-4 bg-[#223649] text-white text-sm font-medium leading-normal"
+  href={href}
+>
+  <span class="truncate">{text}</span>
+</a>

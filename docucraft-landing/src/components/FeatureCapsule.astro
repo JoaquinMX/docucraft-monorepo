@@ -1,0 +1,20 @@
+---
+import CustomIcon from "./CustomIcon.astro";
+
+interface Props {
+  icon: string;
+  size?: string;
+  weight?: string;
+  title: string;
+  path: string;
+}
+
+const { icon, size = "24px", weight = "regular", title, path } = Astro.props;
+---
+
+<div
+  class="flex flex-1 gap-3 rounded-lg border border-[#d3dce3] bg-gray-50 p-4 items-center"
+>
+  <CustomIcon icon={icon} size={size} weight={weight} path={path} />
+  <h2 class="text-[#101519] text-base font-bold leading-tight">{title}</h2>
+</div>

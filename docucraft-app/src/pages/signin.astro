@@ -1,0 +1,130 @@
+---
+import { app } from "../firebase/server";
+import { getAuth } from "firebase-admin/auth";
+import AuthLayout from "@/layouts/AuthLayout.astro";
+
+/* Verificar si el usuario está autenticado */
+const auth = getAuth(app);
+if (Astro.cookies.has("__session")) {
+  const sessionCookie = Astro.cookies.get("__session")?.value;
+  const decodedCookie = await auth.verifySessionCookie(sessionCookie ?? "");
+  if (decodedCookie) {
+    return Astro.redirect("/");
+  }
+}
+---
+
+<AuthLayout title="Iniciar sesión">
+  <div class="layout-container flex h-full grow flex-col">
+    <div class="px-40 flex flex-1 justify-center py-5">
+      <div class="layout-content-container flex flex-col max-w-[480px] flex-1">
+        <div class="flex flex-col gap-6 p-4">
+          <div class="text-center">
+            <h1
+              class="text-white tracking-light text-[32px] font-bold leading-tight mb-2"
+            >
+              Iniciar sesión
+            </h1>
+            <p class="text-[#94a3b3] text-sm leading-normal">
+              ¿Eres nuevo aquí?
+              <a
+                href="/register"
+                class="text-white font-medium hover:text-[#94a3b3] transition-colors"
+              >
+                Crear una cuenta
+              </a>
+            </p>
+          </div>
+
+          <form
+            action="/api/auth/signin"
+            method="post"
+            class="flex flex-col gap-4"
+          >
+            <div class="flex flex-col gap-2">
+              <label
+                for="email"
+                class="text-white text-sm font-medium leading-normal"
+              >
+                Correo electrónico
+              </label>
+              <input
+                type="email"
+                name="email"
+                id="email"
+                class="flex h-12 w-full resize-none overflow-hidden rounded-lg border border-[#223649] bg-[#0c1520] px-4 text-white placeholder:text-[#94a3b3] focus:border-[#3ba7d1] focus:outline-none text-sm"
+                placeholder="Ingresa tu correo electrónico"
+                required
+              />
+            </div>
+
+            <div class="flex flex-col gap-2">
+              <label
+                for="password"
+                class="text-white text-sm font-medium leading-normal"
+              >
+                Contraseña
+              </label>
+              <input
+                type="password"
+                name="password"
+                id="password"
+                class="flex h-12 w-full resize-none overflow-hidden rounded-lg border border-[#223649] bg-[#0c1520] px-4 text-white placeholder:text-[#94a3b3] focus:border-[#3ba7d1] focus:outline-none text-sm"
+                placeholder="Ingresa tu contraseña"
+                required
+              />
+            </div>
+
+            <button
+              type="submit"
+              class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-6 bg-[#3ba7d1] text-white text-sm font-medium leading-normal hover:bg-[#2e85a8] transition-colors mt-2"
+            >
+              Iniciar sesión
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</AuthLayout>
+
+<script>
+  import {
+    getAuth,
+    inMemoryPersistence,
+    signInWithEmailAndPassword,
+  } from "firebase/auth";
+  import { app } from "../firebase/client";
+
+  const auth = getAuth(app);
+  // Esto evitará que el navegador almacene los datos de sesión
+  auth.setPersistence(inMemoryPersistence);
+
+  const form = document.querySelector("form") as HTMLFormElement;
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const formData = new FormData(form);
+    const email = formData.get("email")?.toString();
+    const password = formData.get("password")?.toString();
+
+    if (!email || !password) {
+      return;
+    }
+    const userCredential = await signInWithEmailAndPassword(
+      auth,
+      email,
+      password
+    );
+    const idToken = await userCredential.user.getIdToken();
+    const response = await fetch("/api/auth/signin", {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${idToken}`,
+      },
+    });
+
+    if (response.redirected) {
+      window.location.assign(response.url);
+    }
+  });
+</script>

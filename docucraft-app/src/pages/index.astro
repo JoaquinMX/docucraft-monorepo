@@ -1,0 +1,52 @@
+---
+import { app } from "../firebase/server";
+import { getAuth } from "firebase-admin/auth";
+import MainLayout from "@layouts/MainLayout.astro";
+import ProjectCard from "@/components/ProjectCard.astro";
+import { projects } from "@/data/mockdata";
+import ButtonNavigation from "@/components/ButtonNavigation.astro";
+
+const auth = getAuth(app);
+
+/* Verificar la sesión actual */
+if (!Astro.cookies.has("__session")) {
+  return Astro.redirect("/signin");
+}
+const sessionCookie = Astro.cookies.get("__session")?.value;
+const decodedCookie = await auth.verifySessionCookie(sessionCookie ?? "");
+const user = await auth.getUser(decodedCookie.uid);
+
+if (!user) {
+  return Astro.redirect("/signin");
+}
+---
+
+<MainLayout title="dashboard">
+  <div class="layout-container flex h-full grow flex-col">
+    <div class="px-40 flex flex-1 justify-center py-5">
+      <div class="layout-content-container flex flex-col max-w-[960px] flex-1">
+        <div class="flex flex-wrap justify-between gap-3 p-4">
+          <p
+            class="text-white tracking-light text-[32px] font-bold leading-tight min-w-72"
+          >
+            My Projects
+          </p>
+          <ButtonNavigation text="Create New Project" href="/new-project" />
+        </div>
+        <div
+          class="grid grid-cols-[repeat(auto-fit,minmax(158px,1fr))] gap-3 p-4"
+        >
+          {
+            projects.map((project) => (
+              <ProjectCard
+                project={project}
+                key={project.id}
+                href={`/projects/${project.id}`}
+              />
+            ))
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</MainLayout>

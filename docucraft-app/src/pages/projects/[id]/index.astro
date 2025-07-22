@@ -1,0 +1,67 @@
+---
+import ProjectSidebar from "@/components/ProjectSidebar.astro";
+import { projects } from "@/data/mockdata";
+import MainLayout from "@layouts/MainLayout.astro";
+
+const id = Astro.params.id as string;
+const project = projects.find((p) => p.id === id);
+
+if (!project) {
+  return Astro.redirect("/404");
+}
+---
+
+<MainLayout title="project">
+  <div class="layout-container flex h-full grow flex-col">
+    <div class="gap-1 px-6 flex flex-1 justify-center py-5">
+      <ProjectSidebar projectId={id} />
+      <div class="layout-content-container flex flex-col max-w-[960px] flex-1">
+        <div class="flex flex-wrap justify-between gap-3 p-4">
+          <p
+            class="text-white tracking-light text-[32px] font-bold leading-tight min-w-72"
+          >
+            Project Overview
+          </p>
+        </div>
+        <div class="px-4 pb-6 space-y-6">
+          <div class="space-y-2">
+            <h2 class="text-white text-xl font-semibold">Project Name</h2>
+            <p class="text-gray-300 text-base">{project.name}</p>
+          </div>
+
+          <div class="space-y-2">
+            <h2 class="text-white text-xl font-semibold">
+              Project Description
+            </h2>
+            <p class="text-gray-300 text-base">{project.description}</p>
+          </div>
+
+          <div class="space-y-2">
+            <h2 class="text-white text-xl font-semibold">Key Objectives</h2>
+            <ul class="text-gray-300 text-base space-y-2 list-disc list-inside">
+              <li>Deliver high-quality documentation and diagrams</li>
+              <li>Maintain clear architectural vision</li>
+              <li>Ensure scalable and maintainable design</li>
+              <li>Facilitate team collaboration and understanding</li>
+            </ul>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4 mt-6">
+            <div class="space-y-1">
+              <h3 class="text-white text-sm font-medium">Created</h3>
+              <p class="text-gray-400 text-sm">
+                {new Date(project.createdAt).toLocaleDateString()}
+              </p>
+            </div>
+            <div class="space-y-1">
+              <h3 class="text-white text-sm font-medium">Last Updated</h3>
+              <p class="text-gray-400 text-sm">
+                {new Date(project.updatedAt).toLocaleDateString()}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</MainLayout>

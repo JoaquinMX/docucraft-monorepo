@@ -1,0 +1,94 @@
+---
+import AuthLayout from "@/layouts/AuthLayout.astro";
+---
+
+<AuthLayout title="Registro">
+  <div class="layout-container flex h-full grow flex-col">
+    <div class="px-40 flex flex-1 justify-center py-5">
+      <div class="layout-content-container flex flex-col max-w-[480px] flex-1">
+        <div class="flex flex-col gap-6 p-4">
+          <div class="text-center">
+            <h1
+              class="text-white tracking-light text-[32px] font-bold leading-tight mb-2"
+            >
+              Registro
+            </h1>
+            <p class="text-[#94a3b3] text-sm leading-normal">
+              ¿Ya tienes una cuenta?
+              <a
+                href="/signin"
+                class="text-white font-medium hover:text-[#94a3b3] transition-colors"
+              >
+                Iniciar sesión
+              </a>
+            </p>
+          </div>
+
+          <form
+            action="/api/auth/register"
+            method="post"
+            class="flex flex-col gap-4"
+          >
+            <div class="flex flex-col gap-2">
+              <label
+                for="name"
+                class="text-white text-sm font-medium leading-normal"
+              >
+                Nombre
+              </label>
+              <input
+                type="text"
+                name="name"
+                id="name"
+                class="flex h-12 w-full resize-none overflow-hidden rounded-lg border border-[#223649] bg-[#0c1520] px-4 text-white placeholder:text-[#94a3b3] focus:border-[#3ba7d1] focus:outline-none text-sm"
+                placeholder="Ingresa tu nombre completo"
+                required
+              />
+            </div>
+
+            <div class="flex flex-col gap-2">
+              <label
+                for="email"
+                class="text-white text-sm font-medium leading-normal"
+              >
+                Correo electrónico
+              </label>
+              <input
+                type="email"
+                name="email"
+                id="email"
+                class="flex h-12 w-full resize-none overflow-hidden rounded-lg border border-[#223649] bg-[#0c1520] px-4 text-white placeholder:text-[#94a3b3] focus:border-[#3ba7d1] focus:outline-none text-sm"
+                placeholder="Ingresa tu correo electrónico"
+                required
+              />
+            </div>
+
+            <div class="flex flex-col gap-2">
+              <label
+                for="password"
+                class="text-white text-sm font-medium leading-normal"
+              >
+                Contraseña
+              </label>
+              <input
+                type="password"
+                name="password"
+                id="password"
+                class="flex h-12 w-full resize-none overflow-hidden rounded-lg border border-[#223649] bg-[#0c1520] px-4 text-white placeholder:text-[#94a3b3] focus:border-[#3ba7d1] focus:outline-none text-sm"
+                placeholder="Crea una contraseña segura"
+                required
+              />
+            </div>
+
+            <button
+              type="submit"
+              class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-6 bg-[#3ba7d1] text-white text-sm font-medium leading-normal hover:bg-[#2e85a8] transition-colors mt-2"
+            >
+              Crear cuenta
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</AuthLayout>

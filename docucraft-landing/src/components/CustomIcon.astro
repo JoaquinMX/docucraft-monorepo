@@ -1,0 +1,27 @@
+---
+interface Props {
+  icon: string;
+  size: string;
+  weight: string;
+  path: string;
+}
+
+const { icon, size = "24px", weight = "regular", path } = Astro.props;
+---
+
+<div
+  class="text-[#101519]"
+  data-icon={icon}
+  data-size={size}
+  data-weight={weight}
+>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    fill="currentColor"
+    viewBox="0 0 256 256"
+  >
+    <path d={path}></path>
+  </svg>
+</div>

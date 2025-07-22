@@ -1,0 +1,45 @@
+---
+import ProjectSidebar from "@/components/ProjectSidebar.astro";
+import MainLayout from "@layouts/MainLayout.astro";
+const mermaidDiagram = `flowchart LR
+            A[Hard] -->|Text| B(Round)
+            B --> C{Decision}
+            C -->|One| D[Result 1]
+            C -->|Two| E[Result 2]`;
+const id = Astro.params.id as string;
+---
+
+<MainLayout title="project">
+  <div class="layout-container flex h-full grow flex-col">
+    <div class="gap-1 px-6 flex flex-1 justify-center py-5">
+      <ProjectSidebar projectId={id} />
+      <div class="layout-content-container flex flex-col max-w-[960px] flex-1">
+        <div class="flex flex-wrap justify-between gap-3 p-4">
+          <p
+            class="text-white tracking-light text-[32px] font-bold leading-tight min-w-72"
+          >
+            ERD
+          </p>
+        </div>
+        <p
+          class="text-white text-base font-normal leading-normal pb-3 pt-1 px-4"
+        >
+          <pre class="mermaid">
+            {mermaidDiagram}
+    </pre>
+        </p>
+      </div>
+    </div>
+  </div>
+</MainLayout>
+
+<script>
+  import mermaid from "mermaid";
+
+  function handleMermaid() {
+    mermaid.initialize({ startOnLoad: true });
+    mermaid.run();
+  }
+
+  document.addEventListener("astro:page-load", handleMermaid);
+</script>
