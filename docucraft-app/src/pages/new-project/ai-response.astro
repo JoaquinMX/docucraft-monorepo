@@ -1,0 +1,250 @@
+---
+import MainLayout from "@layouts/MainLayout.astro";
+---
+
+<MainLayout title="AI Project Analysis">
+  <div class="flex flex-1 justify-center py-5">
+    <div class="layout-content-container flex flex-col w-full max-w-4xl py-5">
+      <h2
+        class="text-white tracking-light text-[28px] font-bold leading-tight px-4 text-center pb-3 pt-5"
+      >
+        AI Project Analysis
+      </h2>
+
+      <div
+        id="loadingState"
+        class="flex flex-col items-center justify-center py-12"
+      >
+        <div
+          class="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0c77f2] mb-4"
+        >
+        </div>
+        <p class="text-white text-lg">Loading your project analysis...</p>
+      </div>
+
+      <div
+        id="errorState"
+        class="hidden flex flex-col items-center justify-center py-12"
+      >
+        <div class="text-red-400 text-lg mb-4">
+          Failed to load project analysis
+        </div>
+        <button
+          onclick="window.location.href='/new-project'"
+          class="px-4 py-2 bg-[#0c77f2] text-white rounded-lg hover:bg-[#0a6bd9] transition-colors"
+        >
+          Try Again
+        </button>
+      </div>
+
+      <div id="contentState" class="hidden space-y-8 px-4">
+        <!-- ERD Diagram -->
+        <div class="bg-[#1f2937] rounded-lg p-6">
+          <h3 class="text-white text-xl font-semibold mb-4">
+            Entity Relationship Diagram
+          </h3>
+          <div id="erdDiagram" class="bg-white rounded p-4"></div>
+        </div>
+
+        <!-- Architecture Diagram -->
+        <div class="bg-[#1f2937] rounded-lg p-6">
+          <h3 class="text-white text-xl font-semibold mb-4">
+            System Architecture
+          </h3>
+          <div id="architectureDiagram" class="bg-white rounded p-4"></div>
+        </div>
+
+        <!-- C4 Diagram -->
+        <div class="bg-[#1f2937] rounded-lg p-6">
+          <h3 class="text-white text-xl font-semibold mb-4">
+            C4 Context Diagram
+          </h3>
+          <div id="c4Diagram" class="bg-white rounded p-4"></div>
+        </div>
+
+        <!-- User Stories -->
+        <div class="bg-[#1f2937] rounded-lg p-6">
+          <h3 class="text-white text-xl font-semibold mb-4">User Stories</h3>
+          <div id="userStories" class="space-y-4"></div>
+        </div>
+
+        <!-- Gantt Chart -->
+        <div class="bg-[#1f2937] rounded-lg p-6">
+          <h3 class="text-white text-xl font-semibold mb-4">
+            Project Timeline
+          </h3>
+          <div id="ganttChart" class="bg-white rounded p-4"></div>
+        </div>
+
+        <!-- Kanban Board -->
+        <div class="bg-[#1f2937] rounded-lg p-6">
+          <h3 class="text-white text-xl font-semibold mb-4">
+            Development Workflow
+          </h3>
+          <div id="kanbanBoard" class="bg-white rounded p-4"></div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex justify-center space-x-4 py-6">
+          <button
+            onclick="window.location.href='/new-project'"
+            class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+          >
+            Start Over
+          </button>
+          <button
+            onclick="saveProject()"
+            class="px-6 py-3 bg-[#0c77f2] text-white rounded-lg hover:bg-[#0a6bd9] transition-colors"
+          >
+            Save Project
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</MainLayout>
+
+<script>
+  import mermaid from "mermaid";
+
+  // Load Mermaid.js
+  const script = document.createElement("script");
+  script.src =
+    "https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js";
+  script.onload = initializePage;
+  document.head.appendChild(script);
+
+  function initializePage() {
+    // Initialize Mermaid
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: "default",
+      securityLevel: "loose",
+    });
+
+    // Load and display AI response
+    loadAIResponse();
+  }
+
+  function loadAIResponse() {
+    const aiResponse = localStorage.getItem("aiResponse");
+
+    if (!aiResponse) {
+      showError();
+      return;
+    }
+
+    try {
+      const data = JSON.parse(aiResponse);
+      displayContent(data.text);
+    } catch (error) {
+      console.error("Error parsing AI response:", error);
+      showError();
+    }
+  }
+
+  function showError() {
+    const loadingState = document.getElementById("loadingState");
+    const errorState = document.getElementById("errorState");
+    if (loadingState) {
+      loadingState.classList.add("hidden");
+    }
+    if (errorState) {
+      errorState.classList.remove("hidden");
+    }
+  }
+
+  function displayContent(aiData) {
+    const loadingState = document.getElementById("loadingState");
+    const contentState = document.getElementById("contentState");
+    if (loadingState) {
+      loadingState.classList.add("hidden");
+    }
+    if (contentState) {
+      contentState.classList.remove("hidden");
+    }
+
+    // Display ERD
+    if (aiData.find((item) => item.type === "erd")) {
+      const erdItem = aiData.find((item) => item.type === "erd");
+      const erdContainer = document.getElementById("erdDiagram");
+      if (erdContainer) {
+        erdContainer.innerHTML = `<div class="mermaid">${erdItem.mermaid}</div>`;
+      }
+    }
+
+    // Display Architecture
+    if (aiData.find((item) => item.type === "architecture")) {
+      const archItem = aiData.find((item) => item.type === "architecture");
+      const archContainer = document.getElementById("architectureDiagram");
+      if (archContainer) {
+        archContainer.innerHTML = `<div class="mermaid">${archItem.mermaid}</div>`;
+      }
+    }
+
+    // Display C4
+    if (aiData.find((item) => item.type === "c4")) {
+      const c4Item = aiData.find((item) => item.type === "c4");
+      const c4Container = document.getElementById("c4Diagram");
+      if (c4Container) {
+        c4Container.innerHTML = `<div class="mermaid">${c4Item.mermaid}</div>`;
+      }
+    }
+
+    // Display User Stories
+    if (aiData.find((item) => item.type === "user-stories")) {
+      const storiesItem = aiData.find((item) => item.type === "user-stories");
+      const storiesContainer = document.getElementById("userStories");
+      if (storiesContainer) {
+        storiesContainer.innerHTML = storiesItem.data
+          .map(
+            (story) => `
+        <div class="bg-[#374151] rounded-lg p-4">
+          <div class="flex justify-between items-start mb-2">
+            <h4 class="text-white font-medium">${story.role}</h4>
+            <span class="bg-[#0c77f2] text-white text-xs px-2 py-1 rounded">${story.storyPoints} SP</span>
+          </div>
+          <p class="text-[#d1d5db] mb-2"><strong>Goal:</strong> ${story.goal}</p>
+          <p class="text-[#9ca3af] mb-3"><strong>Benefit:</strong> ${story.benefit}</p>
+          <div>
+            <p class="text-[#9ca3af] text-sm font-medium mb-1">Acceptance Criteria:</p>
+            <ul class="list-disc list-inside text-[#9ca3af] text-sm space-y-1">
+              ${story.acceptanceCriteria.map((criterion) => `<li>${criterion}</li>`).join("")}
+            </ul>
+          </div>
+        </div>
+      `
+          )
+          .join("");
+      }
+
+      // Display Gantt Chart
+      if (aiData.find((item) => item.type === "gantt")) {
+        const ganttItem = aiData.find((item) => item.type === "gantt");
+        const ganttContainer = document.getElementById("ganttChart");
+        ganttContainer.innerHTML = `<div class="mermaid">${ganttItem.mermaid}</div>`;
+      }
+
+      // Display Kanban Board
+      if (aiData.find((item) => item.type === "kanban")) {
+        const kanbanItem = aiData.find((item) => item.type === "kanban");
+        const kanbanContainer = document.getElementById("kanbanBoard");
+        kanbanContainer.innerHTML = `<div class="mermaid">${kanbanItem.mermaid}</div>`;
+      }
+
+      // Render all Mermaid diagrams
+      mermaid.initialize({
+        startOnLoad: true,
+        theme: "default",
+        securityLevel: "loose",
+      });
+    }
+
+    function saveProject() {
+      // TODO: Implement project saving functionality
+      alert(
+        "Project saving functionality will be implemented in the next step."
+      );
+    }
+  }
+</script>

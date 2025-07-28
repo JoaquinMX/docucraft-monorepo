@@ -1,12 +1,11 @@
 ---
 import ProjectSidebar from "@/components/ProjectSidebar.astro";
 import MainLayout from "@layouts/MainLayout.astro";
-const mermaidDiagram = `flowchart LR
-            A[Hard] -->|Text| B(Round)
-            B --> C{Decision}
-            C -->|One| D[Result 1]
-            C -->|Two| E[Result 2]`;
+
+// Query to get the diagram data through firestore, using the id and slug
+
 const id = Astro.params.id as string;
+const diagram = Astro.params.slug as string;
 ---
 
 <MainLayout title="project">
@@ -18,28 +17,28 @@ const id = Astro.params.id as string;
           <p
             class="text-white tracking-light text-[32px] font-bold leading-tight min-w-72"
           >
-            ERD
+            {diagram}
           </p>
         </div>
         <p
           class="text-white text-base font-normal leading-normal pb-3 pt-1 px-4"
         >
           <pre class="mermaid">
-            {mermaidDiagram}
+            <!-- {erDiagram} -->
     </pre>
         </p>
       </div>
     </div>
   </div>
+
+  <script>
+    import mermaid from "mermaid";
+
+    function handleMermaid() {
+      mermaid.initialize({ startOnLoad: true });
+      mermaid.run();
+    }
+
+    document.addEventListener("astro:page-load", handleMermaid);
+  </script>
 </MainLayout>
-
-<script>
-  import mermaid from "mermaid";
-
-  function handleMermaid() {
-    mermaid.initialize({ startOnLoad: true });
-    mermaid.run();
-  }
-
-  document.addEventListener("astro:page-load", handleMermaid);
-</script>

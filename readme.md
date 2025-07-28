@@ -183,4 +183,3 @@ For more in-depth application performance monitoring (APM), we can integrate New
 This document is intentionally detailed to serve as a comprehensive technical reference and a "single source of truth" for the project's architecture and decision-making process.
 
 My primary background is in developing applications with Flutter, Firebase, and the Google Cloud Platform (GCP). The exploration into technologies like Astro, Hono, and Cloudflare Workers represents a deliberate effort to leverage the best tools for the specific needs of this project, even when they are outside my typical stack. The detailed justifications are therefore a way to transparently document the reasoning behind these technology choices for all stakeholders, including myself.
-```
