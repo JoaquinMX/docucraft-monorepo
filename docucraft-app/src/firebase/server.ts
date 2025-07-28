@@ -16,8 +16,6 @@ const serviceAccount = {
 };
 
 const initApp = () => {
-  // In Cloudflare Workers, Firebase Admin SDK requires explicit credentials.
-  // The `import.meta.env.PROD` check is removed as automatic injection does not apply here.
   console.info("Loading service account from env.");
   return initializeApp({
     credential: cert(serviceAccount as ServiceAccount),
