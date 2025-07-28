@@ -106,7 +106,7 @@ jobs:
           case ${{ matrix.app }} in
             "docucraft-app")
               # Deploy to Cloudflare Pages
-              bunx wrangler pages deploy dist --project-name=docucraft-app
+              bunx wrangler@latest deploy
               ;;
             "docucraft-landing")
               # Deploy to Cloudflare Pages
