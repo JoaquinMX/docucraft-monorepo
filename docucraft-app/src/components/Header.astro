@@ -1,5 +1,40 @@
 ---
 import SignOutButton from "@components/SignOutButton.astro";
+
+interface Props {
+  user?: {
+    displayName?: string | null;
+    email?: string | null;
+    isAnonymous?: boolean;
+  } | null;
+}
+
+const { user } = Astro.props;
+
+// Function to generate initials from user data
+function getUserInitials(user: Props["user"]): string {
+  if (!user) return "AN";
+
+  if (user.isAnonymous) return "AN";
+
+  if (user.displayName) {
+    const names = user.displayName.trim().split(" ");
+    if (names.length >= 2) {
+      return (names[0][0] + names[names.length - 1][0]).toUpperCase();
+    }
+    return names[0][0].toUpperCase();
+  }
+
+  if (user.email) {
+    const emailName = user.email.split("@")[0];
+    return emailName[0].toUpperCase();
+  }
+
+  return "AN";
+}
+
+const userInitials = getUserInitials(user);
+const userEmail = user?.email || "user@example.com";
 ---
 
 <header
@@ -35,12 +70,12 @@ import SignOutButton from "@components/SignOutButton.astro";
     <div class="relative">
       <button
         id="user-menu-button"
-        class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 cursor-pointer hover:ring-2 hover:ring-[#0c77f2] transition-all"
-        style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDGCJesMhNM_MlOnT9fBAd_FtuzGGDc5MW-JknUWwLoC6mfP5mkOT2wwNn_S0HoYMtTG6V0KpUjtunSqsS2O4zAjP7AMUjBr07CLaU0IayLC1NdINmsPPx4lB2urqOHNEmmN9RfhqPiQUlcAv2vw8OFmKaBUeCkrfZWh0AGw25ocrRgyIt-_VAOHIfGFnOOsIqI8xGLAhfwRYj16B2VUWd2Mt1nYs3hKzFc4trQecoHIuwnOyzC_137_vXJWty6kcKI1nZIsO3cmA");'
+        class="flex items-center justify-center aspect-square rounded-full size-10 cursor-pointer hover:ring-2 hover:ring-[#0c77f2] transition-all bg-[#0c77f2] text-white font-semibold text-sm"
         aria-expanded="false"
         aria-haspopup="true"
       >
         <span class="sr-only">Open user menu</span>
+        {userInitials}
       </button>
 
       <div
@@ -50,7 +85,7 @@ import SignOutButton from "@components/SignOutButton.astro";
         <div class="py-1">
           <div class="px-4 py-2 border-b border-[#dbe0e6]">
             <p class="text-white text-sm font-medium">User Account</p>
-            <p class="text-[#60748a] text-xs">user@example.com</p>
+            <p class="text-[#60748a] text-xs">{userEmail}</p>
           </div>
           <div class="px-2 py-1">
             <SignOutButton />
@@ -62,41 +97,60 @@ import SignOutButton from "@components/SignOutButton.astro";
 </header>
 
 <script>
-  const userMenuButton = document.getElementById(
-    "user-menu-button"
-  ) as HTMLButtonElement;
-  const userMenuDropdown = document.getElementById(
-    "user-menu-dropdown"
-  ) as HTMLDivElement;
+  // Singleton pattern to prevent multiple event listeners
+  if (!(window as any).userMenuInitialized) {
+    (window as any).userMenuInitialized = true;
 
-  if (userMenuButton && userMenuDropdown) {
-    userMenuButton.addEventListener("click", () => {
-      const isExpanded =
-        userMenuButton.getAttribute("aria-expanded") === "true";
-      userMenuButton.setAttribute(
-        "aria-expanded",
-        isExpanded ? "false" : "true"
-      );
-      userMenuDropdown.classList.toggle("hidden");
-    });
+    // Function to close the menu
+    function closeMenu() {
+      const button = document.getElementById("user-menu-button");
+      const dropdown = document.getElementById("user-menu-dropdown");
 
-    // Close menu when clicking outside
+      if (button) {
+        button.setAttribute("aria-expanded", "false");
+      }
+      if (dropdown) {
+        dropdown.classList.add("hidden");
+      }
+    }
+
+    // Function to toggle the menu
+    function toggleMenu() {
+      const button = document.getElementById("user-menu-button");
+      const dropdown = document.getElementById("user-menu-dropdown");
+
+      if (button && dropdown) {
+        const isExpanded = button.getAttribute("aria-expanded") === "true";
+        button.setAttribute("aria-expanded", isExpanded ? "false" : "true");
+        dropdown.classList.toggle("hidden");
+      }
+    }
+
+    // Use event delegation for better reliability
     document.addEventListener("click", (event) => {
-      const target = event.target as Node;
-      if (
-        !userMenuButton.contains(target) &&
-        !userMenuDropdown.contains(target)
-      ) {
-        userMenuButton.setAttribute("aria-expanded", "false");
-        userMenuDropdown.classList.add("hidden");
+      const target = event.target as Element;
+
+      // Check if the click is on the user menu button
+      if (target.closest("#user-menu-button")) {
+        event.preventDefault();
+        toggleMenu();
+        return;
+      }
+
+      // Close menu when clicking outside
+      const dropdown = document.getElementById("user-menu-dropdown");
+      if (dropdown && !dropdown.classList.contains("hidden")) {
+        const isClickInside = target.closest("#user-menu-dropdown");
+        if (!isClickInside) {
+          closeMenu();
+        }
       }
     });
 
     // Close menu on escape key
     document.addEventListener("keydown", (event) => {
       if (event.key === "Escape") {
-        userMenuButton.setAttribute("aria-expanded", "false");
-        userMenuDropdown.classList.add("hidden");
+        closeMenu();
       }
     });
   }

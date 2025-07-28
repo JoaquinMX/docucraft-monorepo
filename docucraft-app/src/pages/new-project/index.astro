@@ -1,8 +1,43 @@
 ---
 import MainLayout from "@layouts/MainLayout.astro";
+import { app } from "../../firebase/server";
+import { getAuth } from "firebase-admin/auth";
+
+const auth = getAuth(app);
+
+// Get current user (allow anonymous users)
+let user: {
+  displayName?: string | null;
+  email?: string | null;
+  isAnonymous?: boolean;
+  uid?: string;
+} | null = null;
+if (Astro.cookies.has("__session")) {
+  try {
+    const sessionCookie = Astro.cookies.get("__session")?.value;
+    const decodedCookie = await auth.verifySessionCookie(sessionCookie ?? "");
+    const userRecord = await auth.getUser(decodedCookie.uid);
+    user = {
+      displayName: userRecord.displayName,
+      email: userRecord.email,
+      isAnonymous: userRecord.providerData.length === 0,
+      uid: userRecord.uid,
+    };
+  } catch (error) {
+    // For anonymous users, we'll create a temporary user object
+    user = {
+      displayName: null,
+      email: null,
+      isAnonymous: true,
+      uid: `anonymous_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    };
+  }
+} else {
+  return Astro.redirect("/signin");
+}
 ---
 
-<MainLayout title="new-project">
+<MainLayout user={user}>
   <div class="flex flex-1 justify-center py-5">
     <div
       class="layout-content-container flex flex-col w-[512px] max-w-[512px] py-5"
@@ -12,57 +47,236 @@ import MainLayout from "@layouts/MainLayout.astro";
       >
         Start a new project
       </h2>
-      <form class="flex flex-col w-full max-w-[480px] mx-auto">
-        <div class="flex flex-wrap items-end gap-4 px-4 py-3">
-          <label class="flex flex-col min-w-40 flex-1">
-            <span class="text-white text-base font-medium leading-normal pb-2">
-              Project Name
-            </span>
-            <input
-              type="text"
-              name="projectName"
-              id="projectName"
-              placeholder="Enter project name"
-              class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-white focus:outline-0 focus:ring-0 border border-[#dbe0e6] bg-transparent focus:border-[#0c77f2] h-14 placeholder:text-[#60748a] p-[15px] text-base font-normal leading-normal"
-              required
-            />
-          </label>
-        </div>
-        <div class="flex flex-wrap items-end gap-4 px-4 py-3">
-          <label class="flex flex-col min-w-40 flex-1">
-            <span class="text-white text-base font-medium leading-normal pb-2">
-              Project Description
-            </span>
-            <textarea
-              name="projectDescription"
-              id="projectDescription"
-              placeholder="Describe your project"
-              class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-white focus:outline-0 focus:ring-0 border border-[#dbe0e6] bg-transparent focus:border-[#0c77f2] min-h-36 placeholder:text-[#60748a] p-[15px] text-base font-normal leading-normal"
-              required></textarea>
-          </label>
-        </div>
-        <div class="flex flex-wrap items-end gap-4 px-4 py-3">
-          <label class="flex flex-col min-w-40 flex-1">
-            <span class="text-white text-base font-medium leading-normal pb-2">
-              Key Objectives
-            </span>
-            <textarea
-              name="keyObjectives"
-              id="keyObjectives"
-              placeholder="List the main goals of the project"
-              class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-white focus:outline-0 focus:ring-0 border border-[#dbe0e6] bg-transparent focus:border-[#0c77f2] min-h-36 placeholder:text-[#60748a] p-[15px] text-base font-normal leading-normal"
-              required></textarea>
-          </label>
-        </div>
-        <div class="flex px-4 py-3 justify-center">
-          <button
-            type="submit"
-            class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-[#0c77f2] text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-[#0a6bd9] transition-colors"
+
+      {
+        user?.isAnonymous && (
+          <div class="mx-4 mb-4 p-3 bg-[#374151] rounded-lg border border-[#4b5563]">
+            <p class="text-[#d1d5db] text-sm">
+              <strong>Guest Mode:</strong> You're creating a project as a guest.
+              Your project will be saved temporarily.
+              <a href="/signin" class="text-[#3ba7d1] hover:underline">
+                Sign in
+              </a>{" "}
+              to save your projects permanently.
+            </p>
+          </div>
+        )
+      }
+
+      <form id="projectForm" class="flex flex-col gap-4 px-4">
+        <div class="flex flex-col gap-2">
+          <label
+            for="projectName"
+            class="text-white text-sm font-medium leading-normal"
           >
-            <span class="truncate">Create Project</span>
-          </button>
+            Project Name
+          </label>
+          <input
+            type="text"
+            name="projectName"
+            id="projectName"
+            class="flex h-12 w-full resize-none overflow-hidden rounded-lg border border-[#223649] bg-[#0c1520] px-4 text-white placeholder:text-[#94a3b3] focus:border-[#3ba7d1] focus:outline-none text-sm"
+            placeholder="Enter your project name"
+            required
+          />
         </div>
+
+        <div class="flex flex-col gap-2">
+          <label
+            for="projectDescription"
+            class="text-white text-sm font-medium leading-normal"
+          >
+            Project Description
+          </label>
+          <textarea
+            name="projectDescription"
+            id="projectDescription"
+            rows="4"
+            class="flex w-full resize-none overflow-hidden rounded-lg border border-[#223649] bg-[#0c1520] px-4 py-3 text-white placeholder:text-[#94a3b3] focus:border-[#3ba7d1] focus:outline-none text-sm"
+            placeholder="Describe your project in detail..."
+            required></textarea>
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <label
+            for="keyObjectives"
+            class="text-white text-sm font-medium leading-normal"
+          >
+            Key Objectives
+          </label>
+          <textarea
+            name="keyObjectives"
+            id="keyObjectives"
+            rows="3"
+            class="flex w-full resize-none overflow-hidden rounded-lg border border-[#223649] bg-[#0c1520] px-4 py-3 text-white placeholder:text-[#94a3b3] focus:border-[#3ba7d1] focus:outline-none text-sm"
+            placeholder="What are the main goals of this project?"
+            required></textarea>
+        </div>
+
+        <button
+          type="submit"
+          id="submitButton"
+          class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-6 bg-[#3ba7d1] text-white text-sm font-medium leading-normal hover:bg-[#2e85a8] transition-colors mt-2"
+        >
+          <span id="buttonText">Create Project</span>
+          <div
+            id="loadingSpinner"
+            class="hidden animate-spin rounded-full h-4 w-4 border-b-2 border-white ml-2"
+          >
+          </div>
+        </button>
       </form>
+
+      <div
+        id="errorMessage"
+        class="hidden mx-4 mt-4 p-3 bg-red-900/20 border border-red-500/50 rounded-lg"
+      >
+        <p class="text-red-400 text-sm"></p>
+      </div>
     </div>
   </div>
 </MainLayout>
+
+<script>
+  const workerUrl = import.meta.env.WORKER_URL || "http://localhost:8787";
+  const form = document.getElementById("projectForm") as HTMLFormElement;
+  const submitButton = document.getElementById(
+    "submitButton"
+  ) as HTMLButtonElement;
+  const buttonText = document.getElementById("buttonText") as HTMLSpanElement;
+  const loadingSpinner = document.getElementById(
+    "loadingSpinner"
+  ) as HTMLDivElement;
+  const errorMessage = document.getElementById(
+    "errorMessage"
+  ) as HTMLDivElement;
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    // Reset error message
+    errorMessage.classList.add("hidden");
+
+    // Set loading state
+    submitButton.disabled = true;
+    buttonText.textContent = "Creating Project...";
+    loadingSpinner.classList.remove("hidden");
+
+    try {
+      // Get form data
+      const formData = new FormData(form);
+      const projectName = formData.get("projectName") as string;
+      const projectDescription = formData.get("projectDescription") as string;
+      const keyObjectives = formData.get("keyObjectives") as string;
+
+      // Create the AI request text
+      const aiRequestText = `Project Name: ${projectName}
+
+Project Description: ${projectDescription}
+
+Key Objectives: ${keyObjectives}`;
+
+      // First, create the project in Firestore
+      const projectResponse = await fetch("/api/projects/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: projectName,
+          description: projectDescription,
+          keyObjectives: keyObjectives,
+        }),
+      });
+
+      if (!projectResponse.ok) {
+        throw new Error(`Failed to create project: ${projectResponse.status}`);
+      }
+
+      const projectResult = await projectResponse.json();
+
+      if (!projectResult.success) {
+        throw new Error(projectResult.error || "Failed to create project");
+      }
+
+      const projectId = projectResult.projectId;
+
+      // Store project data in localStorage for the save functionality
+      localStorage.setItem(
+        "projectData",
+        JSON.stringify({
+          id: projectId,
+          name: projectName,
+          description: projectDescription,
+          keyObjectives: keyObjectives,
+        })
+      );
+
+      // Call the AI endpoint
+      const aiResponse = await fetch(`${workerUrl}/api/ai`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          text: aiRequestText,
+        }),
+      });
+
+      if (!aiResponse.ok) {
+        throw new Error(`AI service error: ${aiResponse.status}`);
+      }
+
+      const aiResult = await aiResponse.json();
+
+      // Store the AI response in localStorage for the next page
+      localStorage.setItem("aiResponse", JSON.stringify(aiResult));
+
+      // Update the project with AI analysis
+      const updateResponse = await fetch(
+        `/api/projects/${projectId}/ai-analysis`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            aiAnalysis: aiResult,
+          }),
+        }
+      );
+
+      if (!updateResponse.ok) {
+        console.warn(
+          "Failed to update project with AI analysis, but continuing..."
+        );
+      }
+
+      // Check if user is anonymous from the API response
+      if (projectResult.isAnonymous) {
+        // Redirect to the AI response page for anonymous users
+        window.location.href = "/new-project/ai-response";
+      } else {
+        // Redirect to the specific project page for authenticated users
+        window.location.href = `/projects/${projectId}`;
+      }
+    } catch (error) {
+      console.error("Error creating project:", error);
+
+      // Show error message
+      const errorText = errorMessage.querySelector("p");
+      if (errorText) {
+        errorText.textContent =
+          error instanceof Error
+            ? error.message
+            : "An unexpected error occurred";
+      }
+      errorMessage.classList.remove("hidden");
+
+      // Reset button state
+      submitButton.disabled = false;
+      buttonText.textContent = "Create Project";
+      loadingSpinner.classList.add("hidden");
+    }
+  });
+</script>

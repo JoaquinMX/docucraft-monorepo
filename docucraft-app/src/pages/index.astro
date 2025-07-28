@@ -1,27 +1,73 @@
 ---
 import { app } from "../firebase/server";
 import { getAuth } from "firebase-admin/auth";
+import { getFirestore } from "firebase-admin/firestore";
+import { FIRESTORE_COLLECTIONS } from "@/constants/firestore";
 import MainLayout from "@layouts/MainLayout.astro";
 import ProjectCard from "@/components/ProjectCard.astro";
-import { projects } from "@/data/mockdata";
 import ButtonNavigation from "@/components/ButtonNavigation.astro";
+import LoadingSpinner from "@/components/LoadingSpinner.astro";
+import ErrorMessage from "@/components/ErrorMessage.astro";
+import EmptyState from "@/components/EmptyState.astro";
+import type { Project } from "@/types/Project";
 
 const auth = getAuth(app);
+const db = getFirestore(app);
 
 /* Verificar la sesión actual */
 if (!Astro.cookies.has("__session")) {
   return Astro.redirect("/signin");
 }
+
 const sessionCookie = Astro.cookies.get("__session")?.value;
-const decodedCookie = await auth.verifySessionCookie(sessionCookie ?? "");
-const user = await auth.getUser(decodedCookie.uid);
+let user: {
+  displayName?: string | null;
+  email?: string | null;
+  isAnonymous?: boolean;
+  uid?: string;
+} | null = null;
+
+try {
+  const decodedCookie = await auth.verifySessionCookie(sessionCookie ?? "");
+  const userRecord = await auth.getUser(decodedCookie.uid);
+  user = {
+    displayName: userRecord.displayName,
+    email: userRecord.email,
+    isAnonymous: userRecord.providerData.length === 0,
+    uid: userRecord.uid,
+  };
+} catch (error) {
+  return Astro.redirect("/signin");
+}
 
 if (!user) {
   return Astro.redirect("/signin");
 }
+
+// Fetch projects from Firestore using the new user-based structure
+let projects: Project[] = [];
+let error: string | null = null;
+
+try {
+  if (user.uid) {
+    const projectsRef = db
+      .collection(FIRESTORE_COLLECTIONS.USER_PROJECTS)
+      .doc(user.uid)
+      .collection(FIRESTORE_COLLECTIONS.PROJECTS);
+    const snapshot = await projectsRef.orderBy("createdAt", "desc").get();
+
+    projects = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as Project[];
+  }
+} catch (err) {
+  console.error("Error fetching projects:", err);
+  error = "Failed to load projects";
+}
 ---
 
-<MainLayout title="dashboard">
+<MainLayout user={user}>
   <div class="layout-container flex h-full grow flex-col">
     <div class="px-40 flex flex-1 justify-center py-5">
       <div class="layout-content-container flex flex-col max-w-[960px] flex-1">
@@ -33,17 +79,46 @@ if (!user) {
           </p>
           <ButtonNavigation text="Create New Project" href="/new-project" />
         </div>
+
+        {
+          user?.isAnonymous && (
+            <div class="mx-4 mb-4 p-3 bg-[#374151] rounded-lg border border-[#4b5563]">
+              <p class="text-[#d1d5db] text-sm">
+                <strong>Guest Mode:</strong> You're viewing projects as a guest.
+                <a href="/signin" class="text-[#3ba7d1] hover:underline">
+                  Sign in
+                </a>{" "}
+                to save your projects permanently.
+              </p>
+            </div>
+          )
+        }
+
+        {error && <ErrorMessage message={error} showRetry={true} />}
+
         <div
-          class="grid grid-cols-[repeat(auto-fit,minmax(158px,1fr))] gap-3 p-4"
+          class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 p-4"
         >
           {
-            projects.map((project) => (
-              <ProjectCard
-                project={project}
-                key={project.id}
-                href={`/projects/${project.id}`}
-              />
-            ))
+            projects.length === 0 && !error ? (
+              <div class="col-span-full">
+                <EmptyState
+                  title="No projects yet"
+                  description="Create your first project to get started"
+                  actionText="Create New Project"
+                  actionHref="/new-project"
+                  icon="🚀"
+                />
+              </div>
+            ) : (
+              projects.map((project) => (
+                <ProjectCard
+                  project={project}
+                  key={project.id}
+                  href={`/projects/${project.id}`}
+                />
+              ))
+            )
           }
         </div>
       </div>

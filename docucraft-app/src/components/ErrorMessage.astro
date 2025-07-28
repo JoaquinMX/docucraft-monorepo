@@ -1,0 +1,30 @@
+---
+interface Props {
+  message: string;
+  showRetry?: boolean;
+  retryText?: string;
+  onRetry?: string;
+}
+
+const {
+  message,
+  showRetry = false,
+  retryText = "Try Again",
+  onRetry = "window.location.reload()",
+} = Astro.props;
+---
+
+<div class="p-4 bg-red-900/20 border border-red-500/50 rounded-lg">
+  <p class="text-red-300 mb-3">{message}</p>
+  {
+    showRetry && (
+      <button
+        onclick={onRetry}
+        class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
+      >
+        {retryText}
+      </button>
+    )
+  }
+</div>
+

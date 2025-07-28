@@ -24,11 +24,7 @@ import AuthLayout from "@/layouts/AuthLayout.astro";
             </p>
           </div>
 
-          <form
-            action="/api/auth/register"
-            method="post"
-            class="flex flex-col gap-4"
-          >
+          <form id="registrationForm" class="flex flex-col gap-4">
             <div class="flex flex-col gap-2">
               <label
                 for="name"
@@ -82,13 +78,133 @@ import AuthLayout from "@/layouts/AuthLayout.astro";
 
             <button
               type="submit"
+              id="submitButton"
               class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-6 bg-[#3ba7d1] text-white text-sm font-medium leading-normal hover:bg-[#2e85a8] transition-colors mt-2"
             >
-              Crear cuenta
+              <span id="buttonText">Crear cuenta</span>
+              <div
+                id="loadingSpinner"
+                class="hidden animate-spin rounded-full h-4 w-4 border-b-2 border-white ml-2"
+              >
+              </div>
             </button>
           </form>
+
+          <div
+            id="errorMessage"
+            class="hidden p-3 bg-red-900/20 border border-red-500/50 rounded-lg"
+          >
+            <p class="text-red-400 text-sm"></p>
+          </div>
         </div>
       </div>
     </div>
   </div>
 </AuthLayout>
+
+<script>
+  import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+  import { app } from "../firebase/client";
+
+  // Initialize Firebase Auth
+  const auth = getAuth(app);
+
+  // Function to sign in user after registration
+  async function signInUser(email: string, password: string) {
+    try {
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      const idToken = await userCredential.user.getIdToken();
+
+      // Create session cookie
+      const response = await fetch("/api/auth/signin", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to create session");
+      }
+    } catch (error) {
+      console.error("Error signing in user:", error);
+      throw error;
+    }
+  }
+
+  const form = document.getElementById("registrationForm") as HTMLFormElement;
+  const submitButton = document.getElementById(
+    "submitButton"
+  ) as HTMLButtonElement;
+  const buttonText = document.getElementById("buttonText") as HTMLSpanElement;
+  const loadingSpinner = document.getElementById(
+    "loadingSpinner"
+  ) as HTMLDivElement;
+  const errorMessage = document.getElementById(
+    "errorMessage"
+  ) as HTMLDivElement;
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    // Reset error message
+    errorMessage.classList.add("hidden");
+
+    // Set loading state
+    submitButton.disabled = true;
+    buttonText.textContent = "Creando cuenta...";
+    loadingSpinner.classList.remove("hidden");
+
+    try {
+      const formData = new FormData(form);
+      const email = formData.get("email") as string;
+      const password = formData.get("password") as string;
+      const name = formData.get("name") as string;
+
+      // Register the user
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (response.ok) {
+        // Successfully registered, now sign in automatically
+        try {
+          await signInUser(email, password);
+          alert(
+            "¡Cuenta creada exitosamente! Has sido conectado automáticamente."
+          );
+          window.location.href = "/";
+        } catch (signInError) {
+          console.error("Sign in failed:", signInError);
+          alert(
+            "Cuenta creada exitosamente. Por favor inicia sesión manualmente."
+          );
+          window.location.href = "/signin";
+        }
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Error al crear la cuenta");
+      }
+    } catch (error) {
+      console.error("Registration error:", error);
+
+      // Show error message
+      const errorText = errorMessage.querySelector("p");
+      if (errorText) {
+        errorText.textContent =
+          error instanceof Error ? error.message : "Error inesperado";
+      }
+      errorMessage.classList.remove("hidden");
+
+      // Reset button state
+      submitButton.disabled = false;
+      buttonText.textContent = "Crear cuenta";
+      loadingSpinner.classList.add("hidden");
+    }
+  });
+</script>

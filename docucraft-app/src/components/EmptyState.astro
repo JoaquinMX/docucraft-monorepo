@@ -1,0 +1,28 @@
+---
+interface Props {
+  title: string;
+  description: string;
+  actionText?: string;
+  actionHref?: string;
+  icon?: string;
+}
+
+const { title, description, actionText, actionHref, icon = "📋" } = Astro.props;
+---
+
+<div class="text-center py-12">
+  <div class="text-4xl mb-4">{icon}</div>
+  <h3 class="text-gray-400 text-lg font-medium mb-2">{title}</h3>
+  <p class="text-gray-500 text-sm mb-6">{description}</p>
+  {
+    actionText && actionHref && (
+      <a
+        href={actionHref}
+        class="inline-flex items-center px-4 py-2 bg-[#0c77f2] text-white rounded-lg hover:bg-[#0a6bd9] transition-colors text-sm font-medium"
+      >
+        {actionText}
+      </a>
+    )
+  }
+</div>
+

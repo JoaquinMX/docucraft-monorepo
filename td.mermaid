@@ -1,0 +1,39 @@
+graph TD
+    subgraph "User's Browser"
+        A[docucraft_landing]
+        B[docucraft_app]
+    end
+
+    subgraph "Cloudflare Edge Network"
+        C[Cloudflare Pages for Hosting]
+        D[Cloudflare CDN]
+        E[docucraft-worker]
+    end
+
+    subgraph "Backend Services"
+        F[Firebase]
+        G[Firebase Auth]
+        H[Firebase Firestore]
+        I[Firebase Storage]
+    end
+
+    subgraph "External Services"
+        L[Google AI]
+    end
+
+    subgraph "Development and Deployment"
+        J[GitHub Monorepo] -->|git push - main| K[GitHub Actions CI/CD]
+        K -->|Deploy Astro Landing| C
+        K -->|Deploy Astro App| D
+        K -->|Deploy Hono API| E
+    end
+
+    A -->|HTTP Requests| D
+    B -->|HTTP Requests| D
+    D -- "Cached Content" --> A & B
+    D -- "Dynamic Requests" --> C
+
+    B -->|API Calls| E
+    E -->|Backend API Calls| F
+    E -->|External AI| L
+    F --> G & H & I

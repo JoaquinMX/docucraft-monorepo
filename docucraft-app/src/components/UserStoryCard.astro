@@ -1,0 +1,29 @@
+---
+export interface Props {
+  role: string;
+  storyPoints: number;
+  goal: string;
+  benefit: string;
+  acceptanceCriteria: string[];
+}
+
+const { role, storyPoints, goal, benefit, acceptanceCriteria } = Astro.props;
+---
+
+<div class="bg-[#374151] rounded-lg p-4">
+  <div class="flex justify-between items-start mb-2">
+    <h4 class="text-white font-medium">{role}</h4>
+    <span class="bg-[#0c77f2] text-white text-xs px-2 py-1 rounded"
+      >{storyPoints} SP</span
+    >
+  </div>
+  <p class="text-[#d1d5db] mb-2"><strong>Goal:</strong> {goal}</p>
+  <p class="text-[#9ca3af] mb-3"><strong>Benefit:</strong> {benefit}</p>
+  <div>
+    <p class="text-[#9ca3af] text-sm font-medium mb-1">Acceptance Criteria:</p>
+    <ul class="list-disc list-inside text-[#9ca3af] text-sm space-y-1">
+      {acceptanceCriteria.map((criterion) => <li>{criterion}</li>)}
+    </ul>
+  </div>
+</div>
+

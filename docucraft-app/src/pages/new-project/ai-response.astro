@@ -1,8 +1,43 @@
 ---
 import MainLayout from "@layouts/MainLayout.astro";
+import { app } from "../../firebase/server";
+import { getAuth } from "firebase-admin/auth";
+
+const auth = getAuth(app);
+
+// Check if user is authenticated - only allow anonymous users
+let user: {
+  displayName?: string | null;
+  email?: string | null;
+  isAnonymous?: boolean;
+  uid?: string;
+} | null = null;
+if (Astro.cookies.has("__session")) {
+  try {
+    const sessionCookie = Astro.cookies.get("__session")?.value;
+    const decodedCookie = await auth.verifySessionCookie(sessionCookie ?? "");
+    const userRecord = await auth.getUser(decodedCookie.uid);
+
+    // If user is authenticated (not anonymous), redirect to main page
+    if (userRecord.providerData.length > 0) {
+      return Astro.redirect("/");
+    }
+
+    user = {
+      displayName: userRecord.displayName,
+      email: userRecord.email,
+      isAnonymous: userRecord.providerData.length === 0,
+      uid: userRecord.uid,
+    };
+  } catch (error) {
+    return Astro.redirect("/signin");
+  }
+} else {
+  return Astro.redirect("/signin");
+}
 ---
 
-<MainLayout title="AI Project Analysis">
+<MainLayout user={user} title="AI Project Analysis">
   <div class="flex flex-1 justify-center py-5">
     <div class="layout-content-container flex flex-col w-full max-w-4xl py-5">
       <h2
@@ -10,6 +45,30 @@ import MainLayout from "@layouts/MainLayout.astro";
       >
         AI Project Analysis
       </h2>
+
+      <div
+        class="mx-4 mb-4 p-4 bg-[#374151] rounded-lg border border-[#4b5563]"
+      >
+        <p class="text-[#d1d5db] text-sm mb-3">
+          <strong>Guest Mode:</strong> You're viewing this project as a guest. To
+          save your projects permanently and access them later, create an account
+          or sign in.
+        </p>
+        <div class="flex gap-3">
+          <button
+            id="createAccountBtn"
+            class="px-4 py-2 bg-[#0c77f2] text-white rounded-lg hover:bg-[#0a6bd9] transition-colors text-sm font-medium"
+          >
+            Create Account & Save Project
+          </button>
+          <a
+            href="/signin"
+            class="px-4 py-2 bg-[#374151] text-white rounded-lg hover:bg-[#4b5563] transition-colors text-sm font-medium"
+          >
+            Sign In
+          </a>
+        </div>
+      </div>
 
       <div
         id="loadingState"
@@ -39,7 +98,7 @@ import MainLayout from "@layouts/MainLayout.astro";
 
       <div id="contentState" class="hidden space-y-8 px-4">
         <!-- ERD Diagram -->
-        <div class="bg-[#1f2937] rounded-lg p-6">
+        <div id="erdSection" class="hidden bg-[#1f2937] rounded-lg p-6">
           <h3 class="text-white text-xl font-semibold mb-4">
             Entity Relationship Diagram
           </h3>
@@ -47,7 +106,10 @@ import MainLayout from "@layouts/MainLayout.astro";
         </div>
 
         <!-- Architecture Diagram -->
-        <div class="bg-[#1f2937] rounded-lg p-6">
+        <div
+          id="architectureSection"
+          class="hidden bg-[#1f2937] rounded-lg p-6"
+        >
           <h3 class="text-white text-xl font-semibold mb-4">
             System Architecture
           </h3>
@@ -55,7 +117,7 @@ import MainLayout from "@layouts/MainLayout.astro";
         </div>
 
         <!-- C4 Diagram -->
-        <div class="bg-[#1f2937] rounded-lg p-6">
+        <div id="c4Section" class="hidden bg-[#1f2937] rounded-lg p-6">
           <h3 class="text-white text-xl font-semibold mb-4">
             C4 Context Diagram
           </h3>
@@ -63,13 +125,13 @@ import MainLayout from "@layouts/MainLayout.astro";
         </div>
 
         <!-- User Stories -->
-        <div class="bg-[#1f2937] rounded-lg p-6">
+        <div id="userStoriesSection" class="hidden bg-[#1f2937] rounded-lg p-6">
           <h3 class="text-white text-xl font-semibold mb-4">User Stories</h3>
           <div id="userStories" class="space-y-4"></div>
         </div>
 
         <!-- Gantt Chart -->
-        <div class="bg-[#1f2937] rounded-lg p-6">
+        <div id="ganttSection" class="hidden bg-[#1f2937] rounded-lg p-6">
           <h3 class="text-white text-xl font-semibold mb-4">
             Project Timeline
           </h3>
@@ -77,7 +139,7 @@ import MainLayout from "@layouts/MainLayout.astro";
         </div>
 
         <!-- Kanban Board -->
-        <div class="bg-[#1f2937] rounded-lg p-6">
+        <div id="kanbanSection" class="hidden bg-[#1f2937] rounded-lg p-6">
           <h3 class="text-white text-xl font-semibold mb-4">
             Development Workflow
           </h3>
@@ -87,18 +149,102 @@ import MainLayout from "@layouts/MainLayout.astro";
         <!-- Action Buttons -->
         <div class="flex justify-center space-x-4 py-6">
           <button
-            onclick="window.location.href='/new-project'"
+            id="startOverBtn"
             class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
           >
             Start Over
           </button>
           <button
-            onclick="saveProject()"
+            id="createAccountBtn2"
             class="px-6 py-3 bg-[#0c77f2] text-white rounded-lg hover:bg-[#0a6bd9] transition-colors"
           >
-            Save Project
+            Create Account & Save Project
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Registration Modal -->
+  <div
+    id="registrationModal"
+    class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+  >
+    <div class="bg-[#0c1520] rounded-lg p-6 w-full max-w-md mx-4">
+      <h3 class="text-white text-xl font-bold mb-4">Create Account</h3>
+      <p class="text-[#94a3b3] text-sm mb-4">
+        Create an account to save your project permanently and access it later.
+      </p>
+
+      <form id="registrationForm" class="space-y-4">
+        <div>
+          <label for="name" class="block text-white text-sm font-medium mb-2">
+            Name
+          </label>
+          <input
+            type="text"
+            id="name"
+            name="name"
+            required
+            class="w-full h-10 px-3 rounded border border-[#223649] bg-[#0c1520] text-white placeholder:text-[#94a3b3] focus:border-[#3ba7d1] focus:outline-none text-sm"
+            placeholder="Enter your full name"
+          />
+        </div>
+
+        <div>
+          <label for="email" class="block text-white text-sm font-medium mb-2">
+            Email
+          </label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            required
+            class="w-full h-10 px-3 rounded border border-[#223649] bg-[#0c1520] text-white placeholder:text-[#94a3b3] focus:border-[#3ba7d1] focus:outline-none text-sm"
+            placeholder="Enter your email"
+          />
+        </div>
+
+        <div>
+          <label
+            for="password"
+            class="block text-white text-sm font-medium mb-2"
+          >
+            Password
+          </label>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            required
+            minlength="6"
+            class="w-full h-10 px-3 rounded border border-[#223649] bg-[#0c1520] text-white placeholder:text-[#94a3b3] focus:border-[#3ba7d1] focus:outline-none text-sm"
+            placeholder="Enter your password"
+          />
+        </div>
+
+        <div class="flex space-x-3 mt-6">
+          <button
+            type="button"
+            id="cancelRegistrationBtn"
+            class="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            class="flex-1 px-4 py-2 bg-[#0c77f2] text-white rounded-lg hover:bg-[#0a6bd9] transition-colors"
+          >
+            Create Account
+          </button>
+        </div>
+      </form>
+
+      <div
+        id="registrationError"
+        class="hidden mt-4 p-3 bg-red-900/20 border border-red-500/50 rounded"
+      >
+        <p class="text-red-400 text-sm"></p>
       </div>
     </div>
   </div>
@@ -106,6 +252,39 @@ import MainLayout from "@layouts/MainLayout.astro";
 
 <script>
   import mermaid from "mermaid";
+  import type { AIAnalysis } from "@/types/AIAnalysis";
+  import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+  import { app } from "../../firebase/client";
+
+  // Initialize Firebase Auth
+  const auth = getAuth(app);
+
+  // Function to sign in user after registration
+  async function signInUser(email: string, password: string) {
+    try {
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      const idToken = await userCredential.user.getIdToken();
+
+      // Create session cookie
+      const response = await fetch("/api/auth/signin", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to create session");
+      }
+    } catch (error) {
+      console.error("Error signing in user:", error);
+      throw error;
+    }
+  }
 
   // Load Mermaid.js
   const script = document.createElement("script");
@@ -124,6 +303,9 @@ import MainLayout from "@layouts/MainLayout.astro";
 
     // Load and display AI response
     loadAIResponse();
+
+    // Set up event listeners
+    setupEventListeners();
   }
 
   function loadAIResponse() {
@@ -136,11 +318,48 @@ import MainLayout from "@layouts/MainLayout.astro";
 
     try {
       const data = JSON.parse(aiResponse);
-      displayContent(data.text);
+
+      // Transform the AI response from array format to flat object format
+      const transformedData = transformAIResponse(data.aiResponse);
+      displayContent(transformedData);
     } catch (error) {
       console.error("Error parsing AI response:", error);
       showError();
     }
+  }
+
+  function transformAIResponse(aiResponse: any): AIAnalysis {
+    const result: AIAnalysis = {};
+
+    // Handle the case where the response has a 'text' property containing the array
+    const responseArray = aiResponse.text || aiResponse;
+
+    if (Array.isArray(responseArray)) {
+      responseArray.forEach((item) => {
+        switch (item.type) {
+          case "erd":
+            result.erd = item.mermaid;
+            break;
+          case "architecture":
+            result.architecture = item.mermaid;
+            break;
+          case "c4":
+            result.c4 = item.mermaid;
+            break;
+          case "user-stories":
+            result.userStories = item.data;
+            break;
+          case "gantt":
+            result.gantt = item.mermaid;
+            break;
+          case "kanban":
+            result.kanban = item.mermaid;
+            break;
+        }
+      });
+    }
+
+    return result;
   }
 
   function showError() {
@@ -154,7 +373,9 @@ import MainLayout from "@layouts/MainLayout.astro";
     }
   }
 
-  function displayContent(aiData) {
+  function displayContent(aiAnalysis: AIAnalysis) {
+    console.log("Displaying content with:", aiAnalysis);
+
     const loadingState = document.getElementById("loadingState");
     const contentState = document.getElementById("contentState");
     if (loadingState) {
@@ -165,86 +386,229 @@ import MainLayout from "@layouts/MainLayout.astro";
     }
 
     // Display ERD
-    if (aiData.find((item) => item.type === "erd")) {
-      const erdItem = aiData.find((item) => item.type === "erd");
+    if (aiAnalysis.erd) {
+      console.log("Displaying ERD:", aiAnalysis.erd);
+      const erdSection = document.getElementById("erdSection");
       const erdContainer = document.getElementById("erdDiagram");
-      if (erdContainer) {
-        erdContainer.innerHTML = `<div class="mermaid">${erdItem.mermaid}</div>`;
+      if (erdSection && erdContainer) {
+        erdSection.classList.remove("hidden");
+        erdContainer.innerHTML = `<div class="mermaid">${aiAnalysis.erd}</div>`;
+        console.log("ERD container updated");
+      } else {
+        console.error("ERD section or container not found");
       }
+    } else {
+      console.log("No ERD data found");
     }
 
     // Display Architecture
-    if (aiData.find((item) => item.type === "architecture")) {
-      const archItem = aiData.find((item) => item.type === "architecture");
+    if (aiAnalysis.architecture) {
+      const archSection = document.getElementById("architectureSection");
       const archContainer = document.getElementById("architectureDiagram");
-      if (archContainer) {
-        archContainer.innerHTML = `<div class="mermaid">${archItem.mermaid}</div>`;
+      if (archSection && archContainer) {
+        archSection.classList.remove("hidden");
+        archContainer.innerHTML = `<div class="mermaid">${aiAnalysis.architecture}</div>`;
       }
     }
 
     // Display C4
-    if (aiData.find((item) => item.type === "c4")) {
-      const c4Item = aiData.find((item) => item.type === "c4");
+    if (aiAnalysis.c4) {
+      const c4Section = document.getElementById("c4Section");
       const c4Container = document.getElementById("c4Diagram");
-      if (c4Container) {
-        c4Container.innerHTML = `<div class="mermaid">${c4Item.mermaid}</div>`;
+      if (c4Section && c4Container) {
+        c4Section.classList.remove("hidden");
+        c4Container.innerHTML = `<div class="mermaid">${aiAnalysis.c4}</div>`;
       }
     }
 
     // Display User Stories
-    if (aiData.find((item) => item.type === "user-stories")) {
-      const storiesItem = aiData.find((item) => item.type === "user-stories");
+    if (aiAnalysis.userStories && aiAnalysis.userStories.length > 0) {
+      const storiesSection = document.getElementById("userStoriesSection");
       const storiesContainer = document.getElementById("userStories");
-      if (storiesContainer) {
-        storiesContainer.innerHTML = storiesItem.data
+      if (storiesSection && storiesContainer) {
+        storiesSection.classList.remove("hidden");
+        storiesContainer.innerHTML = aiAnalysis.userStories
           .map(
             (story) => `
         <div class="bg-[#374151] rounded-lg p-4">
           <div class="flex justify-between items-start mb-2">
             <h4 class="text-white font-medium">${story.role}</h4>
-            <span class="bg-[#0c77f2] text-white text-xs px-2 py-1 rounded">${story.storyPoints} SP</span>
+            ${story.storyPoints ? `<span class="bg-[#0c77f2] text-white text-xs px-2 py-1 rounded">${story.storyPoints} SP</span>` : ""}
           </div>
           <p class="text-[#d1d5db] mb-2"><strong>Goal:</strong> ${story.goal}</p>
           <p class="text-[#9ca3af] mb-3"><strong>Benefit:</strong> ${story.benefit}</p>
+          ${
+            story.acceptanceCriteria && story.acceptanceCriteria.length > 0
+              ? `
           <div>
             <p class="text-[#9ca3af] text-sm font-medium mb-1">Acceptance Criteria:</p>
             <ul class="list-disc list-inside text-[#9ca3af] text-sm space-y-1">
               ${story.acceptanceCriteria.map((criterion) => `<li>${criterion}</li>`).join("")}
             </ul>
           </div>
+          `
+              : ""
+          }
         </div>
       `
           )
           .join("");
       }
+    }
 
-      // Display Gantt Chart
-      if (aiData.find((item) => item.type === "gantt")) {
-        const ganttItem = aiData.find((item) => item.type === "gantt");
-        const ganttContainer = document.getElementById("ganttChart");
-        ganttContainer.innerHTML = `<div class="mermaid">${ganttItem.mermaid}</div>`;
+    // Display Gantt Chart
+    if (aiAnalysis.gantt) {
+      console.log("Displaying Gantt Chart:", aiAnalysis.gantt);
+      const ganttSection = document.getElementById("ganttSection");
+      const ganttContainer = document.getElementById("ganttChart");
+      if (ganttSection && ganttContainer) {
+        ganttSection.classList.remove("hidden");
+        ganttContainer.innerHTML = `<div class="mermaid">${aiAnalysis.gantt}</div>`;
       }
+    }
 
-      // Display Kanban Board
-      if (aiData.find((item) => item.type === "kanban")) {
-        const kanbanItem = aiData.find((item) => item.type === "kanban");
-        const kanbanContainer = document.getElementById("kanbanBoard");
-        kanbanContainer.innerHTML = `<div class="mermaid">${kanbanItem.mermaid}</div>`;
+    // Display Kanban Board
+    if (aiAnalysis.kanban) {
+      const kanbanSection = document.getElementById("kanbanSection");
+      const kanbanContainer = document.getElementById("kanbanBoard");
+      if (kanbanSection && kanbanContainer) {
+        kanbanSection.classList.remove("hidden");
+        kanbanContainer.innerHTML = `<div class="mermaid">${aiAnalysis.kanban}</div>`;
       }
+    }
 
-      // Render all Mermaid diagrams
-      mermaid.initialize({
-        startOnLoad: true,
-        theme: "default",
-        securityLevel: "loose",
+    // Render all Mermaid diagrams
+    console.log("Initializing Mermaid for rendering");
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: "default",
+      securityLevel: "loose",
+    });
+  }
+
+  // Set up event listeners for buttons
+  function setupEventListeners() {
+    // Create Account buttons
+    const createAccountBtn = document.getElementById("createAccountBtn");
+    const createAccountBtn2 = document.getElementById("createAccountBtn2");
+    const startOverBtn = document.getElementById("startOverBtn");
+    const cancelRegistrationBtn = document.getElementById(
+      "cancelRegistrationBtn"
+    );
+
+    if (createAccountBtn) {
+      createAccountBtn.addEventListener("click", showRegistrationModal);
+    }
+
+    if (createAccountBtn2) {
+      createAccountBtn2.addEventListener("click", showRegistrationModal);
+    }
+
+    if (startOverBtn) {
+      startOverBtn.addEventListener("click", () => {
+        window.location.href = "/new-project";
       });
     }
 
-    function saveProject() {
-      // TODO: Implement project saving functionality
-      alert(
-        "Project saving functionality will be implemented in the next step."
-      );
+    if (cancelRegistrationBtn) {
+      cancelRegistrationBtn.addEventListener("click", hideRegistrationModal);
     }
+  }
+
+  // Registration Modal Functions
+  function showRegistrationModal() {
+    const modal = document.getElementById("registrationModal");
+    if (modal) {
+      modal.classList.remove("hidden");
+    }
+  }
+
+  function hideRegistrationModal() {
+    const modal = document.getElementById("registrationModal");
+    if (modal) {
+      modal.classList.add("hidden");
+    }
+  }
+
+  // Handle registration form submission
+  const registrationForm = document.getElementById(
+    "registrationForm"
+  ) as HTMLFormElement;
+  if (registrationForm) {
+    registrationForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const formData = new FormData(registrationForm);
+      const email = formData.get("email") as string;
+      const password = formData.get("password") as string;
+
+      try {
+        // Get project data from localStorage
+        const projectData = localStorage.getItem("projectData");
+        const aiResponse = localStorage.getItem("aiResponse");
+
+        // Add project data to form if available
+        if (projectData) {
+          formData.append("projectData", projectData);
+        }
+        if (aiResponse) {
+          formData.append("aiResponse", aiResponse);
+        }
+
+        // Register the user
+        const response = await fetch("/api/auth/register", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+
+          // Clear localStorage
+          localStorage.removeItem("projectData");
+          localStorage.removeItem("aiResponse");
+
+          // Show success message
+          if (result.projectId) {
+            alert(
+              "Account created successfully! Your project has been saved to your account. You will be automatically signed in."
+            );
+
+            try {
+              // Automatically sign in the user
+              await signInUser(email, password);
+
+              // Redirect to the saved project
+              window.location.href = `/projects/${result.projectId}`;
+            } catch (signInError) {
+              console.error("Sign in failed:", signInError);
+              alert(
+                "Account created successfully! Please sign in manually to access your project."
+              );
+              window.location.href = "/signin";
+            }
+          } else {
+            alert(
+              "Account created successfully! Please sign in to access your projects."
+            );
+            window.location.href = "/signin";
+          }
+        } else {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Registration failed");
+        }
+      } catch (error) {
+        console.error("Registration error:", error);
+        const errorDiv = document.getElementById("registrationError");
+        const errorText = errorDiv?.querySelector("p");
+        if (errorText) {
+          errorText.textContent =
+            error instanceof Error ? error.message : "Registration failed";
+        }
+        if (errorDiv) {
+          errorDiv.classList.remove("hidden");
+        }
+      }
+    });
   }
 </script>

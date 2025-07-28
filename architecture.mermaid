@@ -1,0 +1,35 @@
+architecture-beta
+    group user_browser[User Browser]
+    group cloudflare[Cloudflare Edge Network]
+    group backend[Backend Services East US]
+    group supabase[Supabase] in backend
+    group external[External Services]
+    group devops[Development and Deployment]
+
+    service landing(logos:astro)[docucraft_landing] in user_browser
+    service app(logos:astro)[docucraft_app] in user_browser
+    service pages(logos:cloudflare-icon)[Cloudflare Pages] in cloudflare
+    service cdn(logos:cloudflare-icon)[Cloudflare CDN] in cloudflare
+    service worker(logos:cloudflare-workers-icon)[docucraft worker] in cloudflare
+    service auth(logos:firebase-icon)[Authentication] in supabase
+    service db(logos:firebase-icon)[Database] in supabase
+    service storage(logos:firebase-icon)[Storage] in supabase
+
+    service ai_provider(logos:google-gemini)[Google AI] in external
+
+    service repo(logos:github-icon)[GitHub Monorepo] in devops
+    service actions(logos:github-actions)[GitHub Actions CICD] in devops
+
+    repo:R -- L:actions
+    actions:B -- T:pages
+    actions:B -- T:worker
+
+    landing:R -- L:cdn
+    app:R -- L:cdn
+    cdn:R -- L:landing
+    cdn:B -- L:app
+    cdn:B -- T:pages
+
+    app:B -- T:worker
+    worker:B -- T:db
+    worker:B -- T:ai_provider

@@ -1,14 +1,145 @@
 ---
 import ProjectSidebar from "@/components/ProjectSidebar.astro";
 import MainLayout from "@layouts/MainLayout.astro";
+import ErrorMessage from "@/components/ErrorMessage.astro";
+import UserStoryCard from "@/components/UserStoryCard.astro";
+import { app } from "@/firebase/server";
+import { getAuth } from "firebase-admin/auth";
+import { getFirestore } from "firebase-admin/firestore";
+import { FIRESTORE_COLLECTIONS } from "@/constants/firestore";
+import type { Project } from "@/types/Project";
+import type { UserStory } from "@/types/AIAnalysis";
 
-// Query to get the diagram data through firestore, using the id and slug
-
+const auth = getAuth(app);
+const db = getFirestore(app);
 const id = Astro.params.id as string;
-const diagram = Astro.params.slug as string;
+const diagram = Astro.params.diagram as string;
+
+// Get current user
+if (!Astro.cookies.has("__session")) {
+  return Astro.redirect("/signin");
+}
+const sessionCookie = Astro.cookies.get("__session")?.value;
+const decodedCookie = await auth.verifySessionCookie(sessionCookie ?? "");
+const user = await auth.getUser(decodedCookie.uid);
+
+if (!user) {
+  return Astro.redirect("/signin");
+}
+
+// Fetch project from Firestore using the user-based structure
+let project: Project | null = null;
+let error: string | null = null;
+let diagramContent: string | null = null;
+let userStories: UserStory[] | null = null;
+
+try {
+  const docRef = db
+    .collection(FIRESTORE_COLLECTIONS.USER_PROJECTS)
+    .doc(user.uid)
+    .collection(FIRESTORE_COLLECTIONS.PROJECTS)
+    .doc(id);
+  const docSnap = await docRef.get();
+
+  if (docSnap.exists) {
+    project = { id: docSnap.id, ...docSnap.data() } as Project;
+    console.log("project", project);
+    console.log(
+      "project.aiAnalysis",
+      (project.aiAnalysis as any)?.aiResponse?.text
+    );
+    console.log((project.aiAnalysis as any)?.gantt, diagram);
+    // Get the appropriate diagram content based on the diagram type
+    if (project.aiAnalysis) {
+      // Transform the AI analysis from array format to flat object format
+      const transformedAnalysis = transformAIAnalysis(project.aiAnalysis);
+      console.log("transformedAnalysis", transformedAnalysis);
+
+      switch (diagram) {
+        case "erd":
+          diagramContent = transformedAnalysis.erd || null;
+          break;
+        case "architecture":
+          diagramContent = transformedAnalysis.architecture || null;
+          break;
+        case "c4":
+          diagramContent = transformedAnalysis.c4 || null;
+          break;
+        case "user-stories":
+          userStories = transformedAnalysis.userStories || null;
+          break;
+        case "gantt":
+          diagramContent = transformedAnalysis.gantt || null;
+          break;
+        case "kanban":
+          diagramContent = transformedAnalysis.kanban || null;
+          break;
+        default:
+          error = "Diagram type not found";
+      }
+    } else {
+      error = "No AI analysis available for this project";
+    }
+  }
+} catch (err) {
+  console.error("Error fetching project:", err);
+  error = "Failed to load project";
+}
+
+if (!project && !error) {
+  return Astro.redirect("/404");
+}
+
+// Format diagram title
+const diagramTitles: Record<string, string> = {
+  erd: "Entity Relationship Diagram",
+  architecture: "Architecture Diagram",
+  c4: "C4 Context Diagram",
+  "user-stories": "User Stories",
+  gantt: "Gantt Chart",
+  kanban: "Kanban Board",
+};
+
+const diagramTitle = diagramTitles[diagram] || diagram;
+
+// Function to transform AI analysis from array format to flat object format
+function transformAIAnalysis(aiAnalysis: any): any {
+  const result: any = {};
+  console.log("aiAnalysis", aiAnalysis);
+  // Handle the case where the response has a 'text' property containing the array
+  const responseArray =
+    (aiAnalysis as any)?.aiResponse?.text || aiAnalysis.text || aiAnalysis;
+  console.log("responseArray", responseArray);
+  if (Array.isArray(responseArray)) {
+    responseArray.forEach((item) => {
+      switch (item.type) {
+        case "erd":
+          result.erd = item.mermaid;
+          break;
+        case "architecture":
+          result.architecture = item.mermaid;
+          break;
+        case "c4":
+          result.c4 = item.mermaid;
+          break;
+        case "user-stories":
+          result.userStories = item.data;
+          break;
+        case "gantt":
+          result.gantt = item.mermaid;
+          break;
+        case "kanban":
+          result.kanban = item.mermaid;
+          break;
+      }
+    });
+  }
+
+  return result;
+}
 ---
 
-<MainLayout title="project">
+<MainLayout user={user}>
   <div class="layout-container flex h-full grow flex-col">
     <div class="gap-1 px-6 flex flex-1 justify-center py-5">
       <ProjectSidebar projectId={id} />
@@ -17,16 +148,56 @@ const diagram = Astro.params.slug as string;
           <p
             class="text-white tracking-light text-[32px] font-bold leading-tight min-w-72"
           >
-            {diagram}
+            {diagramTitle}
           </p>
         </div>
-        <p
-          class="text-white text-base font-normal leading-normal pb-3 pt-1 px-4"
-        >
-          <pre class="mermaid">
-            <!-- {erDiagram} -->
-    </pre>
-        </p>
+
+        {error && <ErrorMessage message={error} showRetry={true} />}
+
+        {
+          userStories && userStories.length > 0 && (
+            <div class="px-4 pb-6">
+              <div class="grid gap-4">
+                {userStories.map((story) => (
+                  <UserStoryCard
+                    role={story.role}
+                    goal={story.goal}
+                    benefit={story.benefit}
+                    storyPoints={story.storyPoints || 0}
+                    acceptanceCriteria={story.acceptanceCriteria || []}
+                  />
+                ))}
+              </div>
+            </div>
+          )
+        }
+
+        {
+          diagramContent && (
+            <div class="px-4 pb-6">
+              <div class="bg-gray-800/50 p-4 rounded-lg">
+                <pre class="mermaid text-sm text-gray-300 whitespace-pre-wrap">
+                  {diagramContent}
+                </pre>
+              </div>
+            </div>
+          )
+        }
+
+        {
+          !diagramContent && !userStories && !error && (
+            <div class="px-4 pb-6">
+              <div class="bg-gray-800/50 p-8 rounded-lg text-center">
+                <p class="text-gray-400 text-lg">
+                  No diagram content available
+                </p>
+                <p class="text-gray-500 text-sm mt-2">
+                  This diagram hasn't been generated yet
+                </p>
+              </div>
+            </div>
+          )
+        }
       </div>
     </div>
   </div>
@@ -35,7 +206,18 @@ const diagram = Astro.params.slug as string;
     import mermaid from "mermaid";
 
     function handleMermaid() {
-      mermaid.initialize({ startOnLoad: true });
+      mermaid.initialize({
+        startOnLoad: true,
+        theme: "dark",
+        themeVariables: {
+          primaryColor: "#3b82f6",
+          primaryTextColor: "#ffffff",
+          primaryBorderColor: "#1e40af",
+          lineColor: "#6b7280",
+          secondaryColor: "#374151",
+          tertiaryColor: "#1f2937",
+        },
+      });
       mermaid.run();
     }
 

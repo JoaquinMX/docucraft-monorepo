@@ -1,17 +1,91 @@
 ---
 import ProjectSidebar from "@/components/ProjectSidebar.astro";
-import { projects } from "@/data/mockdata";
 import MainLayout from "@layouts/MainLayout.astro";
+import ErrorMessage from "@/components/ErrorMessage.astro";
+import { app } from "@/firebase/server";
+import { getAuth } from "firebase-admin/auth";
+import { getFirestore } from "firebase-admin/firestore";
+import { FIRESTORE_COLLECTIONS } from "@/constants/firestore";
+import type { Project } from "@/types/Project";
 
+const auth = getAuth(app);
+const db = getFirestore(app);
 const id = Astro.params.id as string;
-const project = projects.find((p) => p.id === id);
 
-if (!project) {
+// Get current user
+if (!Astro.cookies.has("__session")) {
+  return Astro.redirect("/signin");
+}
+const sessionCookie = Astro.cookies.get("__session")?.value;
+const decodedCookie = await auth.verifySessionCookie(sessionCookie ?? "");
+const user = await auth.getUser(decodedCookie.uid);
+
+if (!user) {
+  return Astro.redirect("/signin");
+}
+
+// Fetch project from Firestore using the user-based structure
+let project: Project | null = null;
+let error: string | null = null;
+
+try {
+  const docRef = db
+    .collection(FIRESTORE_COLLECTIONS.USER_PROJECTS)
+    .doc(user.uid)
+    .collection(FIRESTORE_COLLECTIONS.PROJECTS)
+    .doc(id);
+  const docSnap = await docRef.get();
+
+  if (docSnap.exists) {
+    project = { id: docSnap.id, ...docSnap.data() } as Project;
+  }
+} catch (err) {
+  console.error("Error fetching project:", err);
+  error = "Failed to load project";
+}
+
+if (!project && !error) {
   return Astro.redirect("/404");
+}
+
+// Function to transform AI analysis from array format to flat object format
+function transformAIAnalysis(aiAnalysis: any): any {
+  const result: any = {};
+
+  // Handle the case where the response has a 'text' property containing the array
+  const responseArray =
+    (aiAnalysis as any)?.aiResponse?.text || aiAnalysis.text || aiAnalysis;
+
+  if (Array.isArray(responseArray)) {
+    responseArray.forEach((item) => {
+      switch (item.type) {
+        case "erd":
+          result.erd = item.mermaid;
+          break;
+        case "architecture":
+          result.architecture = item.mermaid;
+          break;
+        case "c4":
+          result.c4 = item.mermaid;
+          break;
+        case "user-stories":
+          result.userStories = item.data;
+          break;
+        case "gantt":
+          result.gantt = item.mermaid;
+          break;
+        case "kanban":
+          result.kanban = item.mermaid;
+          break;
+      }
+    });
+  }
+
+  return result;
 }
 ---
 
-<MainLayout title="project">
+<MainLayout user={user}>
   <div class="layout-container flex h-full grow flex-col">
     <div class="gap-1 px-6 flex flex-1 justify-center py-5">
       <ProjectSidebar projectId={id} />
@@ -20,47 +94,134 @@ if (!project) {
           <p
             class="text-white tracking-light text-[32px] font-bold leading-tight min-w-72"
           >
-            Project Overview
+            {project?.name}
           </p>
         </div>
-        <div class="px-4 pb-6 space-y-6">
-          <div class="space-y-2">
-            <h2 class="text-white text-xl font-semibold">Project Name</h2>
-            <p class="text-gray-300 text-base">{project.name}</p>
-          </div>
 
-          <div class="space-y-2">
-            <h2 class="text-white text-xl font-semibold">
-              Project Description
-            </h2>
-            <p class="text-gray-300 text-base">{project.description}</p>
-          </div>
+        {error && <ErrorMessage message={error} showRetry={true} />}
 
-          <div class="space-y-2">
-            <h2 class="text-white text-xl font-semibold">Key Objectives</h2>
-            <ul class="text-gray-300 text-base space-y-2 list-disc list-inside">
-              <li>Deliver high-quality documentation and diagrams</li>
-              <li>Maintain clear architectural vision</li>
-              <li>Ensure scalable and maintainable design</li>
-              <li>Facilitate team collaboration and understanding</li>
-            </ul>
-          </div>
+        {
+          !error && (
+            <>
+              <div class="px-4 pb-6">
+                <div class="flex flex-col gap-4">
+                  <h2 class="text-white text-xl font-semibold">Description</h2>
+                  <p class="text-[#94a3b3] text-lg leading-normal">
+                    {project?.description}
+                  </p>
+                </div>
+              </div>
+              <div class="px-4 pb-6">
+                <div class="flex flex-col gap-4">
+                  <h2 class="text-white text-xl font-semibold">
+                    Key Objectives
+                  </h2>
+                  <p class="text-[#d1d5db] leading-normal">
+                    {project?.keyObjectives}
+                  </p>
+                </div>
+              </div>
+              {project?.aiAnalysis &&
+                (() => {
+                  // Transform the AI analysis from array format to flat object format
+                  const transformedAnalysis = transformAIAnalysis(
+                    project.aiAnalysis
+                  );
 
-          <div class="grid grid-cols-2 gap-4 mt-6">
-            <div class="space-y-1">
-              <h3 class="text-white text-sm font-medium">Created</h3>
-              <p class="text-gray-400 text-sm">
-                {new Date(project.createdAt).toLocaleDateString()}
-              </p>
-            </div>
-            <div class="space-y-1">
-              <h3 class="text-white text-sm font-medium">Last Updated</h3>
-              <p class="text-gray-400 text-sm">
-                {new Date(project.updatedAt).toLocaleDateString()}
-              </p>
-            </div>
-          </div>
-        </div>
+                  return (
+                    <div class="px-4 pb-6">
+                      <div class="flex flex-col gap-4">
+                        <h2 class="text-white text-xl font-semibold">
+                          AI Analysis
+                        </h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {transformedAnalysis.erd && (
+                            <a
+                              href={`/projects/${project.id}/diagram/erd`}
+                              class="bg-[#1f2937] rounded-lg p-4 hover:bg-[#374151] transition-colors"
+                            >
+                              <h3 class="text-white font-medium mb-2">
+                                Entity Relationship Diagram
+                              </h3>
+                              <p class="text-[#9ca3af] text-sm">
+                                View the database schema
+                              </p>
+                            </a>
+                          )}
+                          {transformedAnalysis.architecture && (
+                            <a
+                              href={`/projects/${project.id}/diagram/architecture`}
+                              class="bg-[#1f2937] rounded-lg p-4 hover:bg-[#374151] transition-colors"
+                            >
+                              <h3 class="text-white font-medium mb-2">
+                                System Architecture
+                              </h3>
+                              <p class="text-[#9ca3af] text-sm">
+                                View the system design
+                              </p>
+                            </a>
+                          )}
+                          {transformedAnalysis.c4 && (
+                            <a
+                              href={`/projects/${project.id}/diagram/c4`}
+                              class="bg-[#1f2937] rounded-lg p-4 hover:bg-[#374151] transition-colors"
+                            >
+                              <h3 class="text-white font-medium mb-2">
+                                C4 Context Diagram
+                              </h3>
+                              <p class="text-[#9ca3af] text-sm">
+                                View the context diagram
+                              </p>
+                            </a>
+                          )}
+                          {transformedAnalysis.userStories &&
+                            transformedAnalysis.userStories.length > 0 && (
+                              <a
+                                href={`/projects/${project.id}/diagram/user-stories`}
+                                class="bg-[#1f2937] rounded-lg p-4 hover:bg-[#374151] transition-colors"
+                              >
+                                <h3 class="text-white font-medium mb-2">
+                                  User Stories
+                                </h3>
+                                <p class="text-[#9ca3af] text-sm">
+                                  View user stories and requirements
+                                </p>
+                              </a>
+                            )}
+                          {transformedAnalysis.gantt && (
+                            <a
+                              href={`/projects/${project.id}/diagram/gantt`}
+                              class="bg-[#1f2937] rounded-lg p-4 hover:bg-[#374151] transition-colors"
+                            >
+                              <h3 class="text-white font-medium mb-2">
+                                Project Timeline
+                              </h3>
+                              <p class="text-[#9ca3af] text-sm">
+                                View the project timeline
+                              </p>
+                            </a>
+                          )}
+                          {transformedAnalysis.kanban && (
+                            <a
+                              href={`/projects/${project.id}/diagram/kanban`}
+                              class="bg-[#1f2937] rounded-lg p-4 hover:bg-[#374151] transition-colors"
+                            >
+                              <h3 class="text-white font-medium mb-2">
+                                Development Workflow
+                              </h3>
+                              <p class="text-[#9ca3af] text-sm">
+                                View the development workflow
+                              </p>
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+            </>
+          )
+        }
       </div>
     </div>
   </div>

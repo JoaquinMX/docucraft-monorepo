@@ -4,25 +4,25 @@ import { getAuth } from "firebase-admin/auth";
 
 const auth = getAuth(app);
 
-// /* Verificar la sesión actual */
-// if (!Astro.cookies.has("__session")) {
-//   return Astro.redirect("/signin");
-// }
-// const sessionCookie = Astro.cookies.get("__session")?.value;
-// const decodedCookie = await auth.verifySessionCookie(sessionCookie ?? "");
-// const user = await auth.getUser(decodedCookie.uid);
-
-// if (!user) {
-//   return Astro.redirect("/signin");
-// }
+// Get current user info for display
+let user = null;
+if (Astro.cookies.has("__session")) {
+  try {
+    const sessionCookie = Astro.cookies.get("__session")?.value;
+    const decodedCookie = await auth.verifySessionCookie(sessionCookie ?? "");
+    user = await auth.getUser(decodedCookie.uid);
+  } catch (error) {
+    // User session is invalid, but we'll still show the sign out button
+    console.log("Invalid session detected");
+  }
+}
 ---
 
-<form action="/api/auth/signout">
-  <!-- <button
-    class:list={{ hidden: !user }}
+<form action="/api/auth/signout" method="get">
+  <button
     type="submit"
-    class="text-white text-sm font-medium leading-normal"
+    class="w-full text-left px-4 py-2 text-white text-sm font-medium leading-normal hover:bg-[#374151] transition-colors rounded"
   >
     Cerrar sesión
-  </button> -->
+  </button>
 </form>

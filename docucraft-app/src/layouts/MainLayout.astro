@@ -2,6 +2,17 @@
 import "@styles/global.css";
 import Header from "@components/Header.astro";
 import { ClientRouter } from "astro:transitions";
+
+interface Props {
+  title?: string;
+  user?: {
+    displayName?: string | null;
+    email?: string | null;
+    isAnonymous?: boolean;
+  } | null;
+}
+
+const { user, title } = Astro.props;
 ---
 
 <html lang="en">
@@ -18,7 +29,7 @@ import { ClientRouter } from "astro:transitions";
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width" />
     <meta name="generator" content={Astro.generator} />
-    <title>Docucraft</title>
+    <title>{title ? `${title} - Docucraft` : "Docucraft"}</title>
     <ClientRouter />
     <script type="module">
       import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
@@ -29,7 +40,7 @@ import { ClientRouter } from "astro:transitions";
     class="relative flex size-full min-h-screen flex-col bg-[#101a23] dark group/design-root overflow-x-hidden"
     style='font-family: Manrope, "Noto Sans", sans-serif;'
   >
-    <Header />
+    <Header user={user} />
     <slot />
   </body>
 </html>
