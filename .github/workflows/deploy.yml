@@ -105,8 +105,8 @@ jobs:
 
           case ${{ matrix.app }} in
             "docucraft-app")
-              # Deploy to Cloudflare Pages
-              bunx wrangler@latest deploy
+              # Deploy to Vercel
+              bunx vercel deploy --prebuilt
               ;;
             "docucraft-landing")
               # Deploy to Cloudflare Pages

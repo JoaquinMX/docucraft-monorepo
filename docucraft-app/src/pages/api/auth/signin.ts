@@ -14,8 +14,9 @@ export const GET: APIRoute = async ({ request, cookies, redirect }) => {
   /* Verificar la id del token */
   try {
     await auth.verifyIdToken(idToken);
-  } catch (error) {
-    return new Response("Token invalido", { status: 401 });
+  } catch (error: any) {
+    console.error("Error verifying token:", error);
+    return new Response(`Token invalido: ${error.message}`, { status: 401 });
   }
 
   /* Crear y establecer una cookie de sesión */
