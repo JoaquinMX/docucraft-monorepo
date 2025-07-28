@@ -35,7 +35,7 @@ jobs:
           if [ ${#APPS_TO_DEPLOY[@]} -eq 0 ]; then
             MATRIX="[]"
           else
-            MATRIX=$(printf '%s\n' "${APPS_TO_DEPLOY[@]}" | jq -R . | jq -s .)
+            MATRIX=$(printf '%s\n' "${APPS_TO_DEPLOY[@]}" | jq -R . | jq -s -c .)
           fi
 
           echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
