@@ -16,11 +16,8 @@ const serviceAccount = {
 };
 
 const initApp = () => {
-  if (import.meta.env.PROD) {
-    console.info("PROD env detected. Using default service account.");
-    // Usa la configuración predeterminada en las funciones de Firebase. Debería estar ya inyectada en el servidor por Firebase.
-    return initializeApp();
-  }
+  // In Cloudflare Workers, Firebase Admin SDK requires explicit credentials.
+  // The `import.meta.env.PROD` check is removed as automatic injection does not apply here.
   console.info("Loading service account from env.");
   return initializeApp({
     credential: cert(serviceAccount as ServiceAccount),
