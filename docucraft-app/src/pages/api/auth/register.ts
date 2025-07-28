@@ -62,10 +62,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             aiAnalysis: aiResponse,
           };
 
+          // Get the image URL (default to alpha if not specified)
+          const imageUrl = projectData.image ? `/src/assets/${projectData.image}.png` : `/src/assets/alpha.png`;
+
           // Save project to Firestore
           projectId = await FirestoreServerService.createProject(
             user.uid,
-            firestoreProjectData
+            firestoreProjectData,
+            imageUrl
           );
         }
       } catch (error) {

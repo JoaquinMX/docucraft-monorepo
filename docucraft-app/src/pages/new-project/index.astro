@@ -1,5 +1,6 @@
 ---
 import MainLayout from "@layouts/MainLayout.astro";
+import ImageSelector from "@/components/ImageSelector.astro";
 import { app } from "../../firebase/server";
 import { getAuth } from "firebase-admin/auth";
 
@@ -63,7 +64,7 @@ if (Astro.cookies.has("__session")) {
         )
       }
 
-      <form id="projectForm" class="flex flex-col gap-4 px-4">
+      <form id="projectForm" class="flex flex-col gap-4 px-4" novalidate>
         <div class="flex flex-col gap-2">
           <label
             for="projectName"
@@ -113,6 +114,8 @@ if (Astro.cookies.has("__session")) {
             required></textarea>
         </div>
 
+        <ImageSelector name="projectImage" selectedImage="alpha" />
+
         <button
           type="submit"
           id="submitButton"
@@ -138,145 +141,164 @@ if (Astro.cookies.has("__session")) {
 </MainLayout>
 
 <script>
-  const workerUrl = import.meta.env.WORKER_URL || "http://localhost:8787";
-  const form = document.getElementById("projectForm") as HTMLFormElement;
-  const submitButton = document.getElementById(
-    "submitButton"
-  ) as HTMLButtonElement;
-  const buttonText = document.getElementById("buttonText") as HTMLSpanElement;
-  const loadingSpinner = document.getElementById(
-    "loadingSpinner"
-  ) as HTMLDivElement;
-  const errorMessage = document.getElementById(
-    "errorMessage"
-  ) as HTMLDivElement;
+  // Wait for DOM to be fully loaded
+  document.addEventListener("DOMContentLoaded", () => {
+    const workerUrl = import.meta.env.WORKER_URL || "http://localhost:8787";
+    const form = document.getElementById("projectForm") as HTMLFormElement;
+    const submitButton = document.getElementById(
+      "submitButton"
+    ) as HTMLButtonElement;
+    const buttonText = document.getElementById("buttonText") as HTMLSpanElement;
+    const loadingSpinner = document.getElementById(
+      "loadingSpinner"
+    ) as HTMLDivElement;
+    const errorMessage = document.getElementById(
+      "errorMessage"
+    ) as HTMLDivElement;
 
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
+    if (
+      !form ||
+      !submitButton ||
+      !buttonText ||
+      !loadingSpinner ||
+      !errorMessage
+    ) {
+      console.error("Required form elements not found");
+      return;
+    }
 
-    // Reset error message
-    errorMessage.classList.add("hidden");
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
 
-    // Set loading state
-    submitButton.disabled = true;
-    buttonText.textContent = "Creating Project...";
-    loadingSpinner.classList.remove("hidden");
+      // Reset error message
+      errorMessage.classList.add("hidden");
 
-    try {
-      // Get form data
-      const formData = new FormData(form);
-      const projectName = formData.get("projectName") as string;
-      const projectDescription = formData.get("projectDescription") as string;
-      const keyObjectives = formData.get("keyObjectives") as string;
+      // Set loading state
+      submitButton.disabled = true;
+      buttonText.textContent = "Creating Project...";
+      loadingSpinner.classList.remove("hidden");
 
-      // Create the AI request text
-      const aiRequestText = `Project Name: ${projectName}
+      try {
+        // Get form data
+        const formData = new FormData(form);
+        const projectName = formData.get("projectName") as string;
+        const projectDescription = formData.get("projectDescription") as string;
+        const keyObjectives = formData.get("keyObjectives") as string;
+        const projectImage = formData.get("projectImage") as string;
+
+        // Create the AI request text
+        const aiRequestText = `Project Name: ${projectName}
 
 Project Description: ${projectDescription}
 
 Key Objectives: ${keyObjectives}`;
 
-      // First, create the project in Firestore
-      const projectResponse = await fetch("/api/projects/create", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: projectName,
-          description: projectDescription,
-          keyObjectives: keyObjectives,
-        }),
-      });
-
-      if (!projectResponse.ok) {
-        throw new Error(`Failed to create project: ${projectResponse.status}`);
-      }
-
-      const projectResult = await projectResponse.json();
-
-      if (!projectResult.success) {
-        throw new Error(projectResult.error || "Failed to create project");
-      }
-
-      const projectId = projectResult.projectId;
-
-      // Store project data in localStorage for the save functionality
-      localStorage.setItem(
-        "projectData",
-        JSON.stringify({
-          id: projectId,
-          name: projectName,
-          description: projectDescription,
-          keyObjectives: keyObjectives,
-        })
-      );
-
-      // Call the AI endpoint
-      const aiResponse = await fetch(`${workerUrl}/api/ai`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          text: aiRequestText,
-        }),
-      });
-
-      if (!aiResponse.ok) {
-        throw new Error(`AI service error: ${aiResponse.status}`);
-      }
-
-      const aiResult = await aiResponse.json();
-
-      // Store the AI response in localStorage for the next page
-      localStorage.setItem("aiResponse", JSON.stringify(aiResult));
-
-      // Update the project with AI analysis
-      const updateResponse = await fetch(
-        `/api/projects/${projectId}/ai-analysis`,
-        {
-          method: "PUT",
+        // First, create the project in Firestore
+        const projectResponse = await fetch("/api/projects/create", {
+          method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            aiAnalysis: aiResult,
+            name: projectName,
+            description: projectDescription,
+            keyObjectives: keyObjectives,
+            image: projectImage,
           }),
+        });
+
+        if (!projectResponse.ok) {
+          throw new Error(
+            `Failed to create project: ${projectResponse.status}`
+          );
         }
-      );
 
-      if (!updateResponse.ok) {
-        console.warn(
-          "Failed to update project with AI analysis, but continuing..."
+        const projectResult = await projectResponse.json();
+
+        if (!projectResult.success) {
+          throw new Error(projectResult.error || "Failed to create project");
+        }
+
+        const projectId = projectResult.projectId;
+
+        // Store project data in localStorage for the save functionality
+        localStorage.setItem(
+          "projectData",
+          JSON.stringify({
+            id: projectId,
+            name: projectName,
+            description: projectDescription,
+            keyObjectives: keyObjectives,
+            image: projectImage,
+          })
         );
-      }
 
-      // Check if user is anonymous from the API response
-      if (projectResult.isAnonymous) {
-        // Redirect to the AI response page for anonymous users
-        window.location.href = "/new-project/ai-response";
-      } else {
-        // Redirect to the specific project page for authenticated users
-        window.location.href = `/projects/${projectId}`;
-      }
-    } catch (error) {
-      console.error("Error creating project:", error);
+        // Call the AI endpoint
+        const aiResponse = await fetch(`${workerUrl}/api/ai`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            text: aiRequestText,
+          }),
+        });
 
-      // Show error message
-      const errorText = errorMessage.querySelector("p");
-      if (errorText) {
-        errorText.textContent =
-          error instanceof Error
-            ? error.message
-            : "An unexpected error occurred";
-      }
-      errorMessage.classList.remove("hidden");
+        if (!aiResponse.ok) {
+          throw new Error(`AI service error: ${aiResponse.status}`);
+        }
 
-      // Reset button state
-      submitButton.disabled = false;
-      buttonText.textContent = "Create Project";
-      loadingSpinner.classList.add("hidden");
-    }
+        const aiResult = await aiResponse.json();
+
+        // Store the AI response in localStorage for the next page
+        localStorage.setItem("aiResponse", JSON.stringify(aiResult));
+
+        // Update the project with AI analysis
+        const updateResponse = await fetch(
+          `/api/projects/${projectId}/ai-analysis`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              aiAnalysis: aiResult,
+            }),
+          }
+        );
+
+        if (!updateResponse.ok) {
+          console.warn(
+            "Failed to update project with AI analysis, but continuing..."
+          );
+        }
+
+        // Check if user is anonymous from the API response
+        if (projectResult.isAnonymous) {
+          // Redirect to the AI response page for anonymous users
+          window.location.href = "/new-project/ai-response";
+        } else {
+          // Redirect to the specific project page for authenticated users
+          window.location.href = `/projects/${projectId}`;
+        }
+      } catch (error) {
+        console.error("Error creating project:", error);
+
+        // Show error message
+        const errorText = errorMessage.querySelector("p");
+        if (errorText) {
+          errorText.textContent =
+            error instanceof Error
+              ? error.message
+              : "An unexpected error occurred";
+        }
+        errorMessage.classList.remove("hidden");
+
+        // Reset button state
+        submitButton.disabled = false;
+        buttonText.textContent = "Create Project";
+        loadingSpinner.classList.add("hidden");
+      }
+    });
   });
 </script>

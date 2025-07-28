@@ -60,6 +60,7 @@ export function validateProjectData(data: any): data is {
   name: string;
   description: string;
   keyObjectives: string;
+  image?: string;
   aiAnalysis?: AIAnalysis;
 } {
   return (
@@ -68,6 +69,7 @@ export function validateProjectData(data: any): data is {
     typeof data.name === "string" &&
     typeof data.description === "string" &&
     typeof data.keyObjectives === "string" &&
+    (data.image === undefined || typeof data.image === "string") &&
     (data.aiAnalysis === undefined || validateAIAnalysis(data.aiAnalysis))
   );
 }

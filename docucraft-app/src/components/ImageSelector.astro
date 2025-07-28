@@ -1,0 +1,176 @@
+---
+import { Image } from "astro:assets";
+import alphaImage from "@/assets/alpha.png";
+import betaImage from "@/assets/beta.png";
+import gammaImage from "@/assets/gamma.png";
+import deltaImage from "@/assets/delta.png";
+import zetaImage from "@/assets/zeta.png";
+
+const PROJECT_IMAGES = {
+  alpha: {
+    id: "alpha",
+    name: "Alpha",
+    src: alphaImage,
+    alt: "Alpha project image",
+  },
+  beta: {
+    id: "beta",
+    name: "Beta",
+    src: betaImage,
+    alt: "Beta project image",
+  },
+  gamma: {
+    id: "gamma",
+    name: "Gamma",
+    src: gammaImage,
+    alt: "Gamma project image",
+  },
+  delta: {
+    id: "delta",
+    name: "Delta",
+    src: deltaImage,
+    alt: "Delta project image",
+  },
+  zeta: {
+    id: "zeta",
+    name: "Zeta",
+    src: zetaImage,
+    alt: "Zeta project image",
+  },
+} as const;
+
+interface Props {
+  selectedImage?: string;
+  name: string;
+}
+
+const { selectedImage = "alpha", name } = Astro.props;
+---
+
+<div class="flex flex-col gap-2">
+  <label for={name} class="text-white text-sm font-medium leading-normal">
+    Project Image
+  </label>
+  <div class="grid grid-cols-5 gap-2">
+    {
+      Object.values(PROJECT_IMAGES).map((image) => (
+        <div class="relative">
+          <input
+            type="radio"
+            id={`${name}-${image.id}`}
+            name={name}
+            value={image.id}
+            checked={selectedImage === image.id}
+            class="sr-only"
+          />
+          <label
+            for={`${name}-${image.id}`}
+            class="block cursor-pointer rounded-lg border-2 transition-all hover:border-[#3ba7d1] focus-within:border-[#3ba7d1]"
+            class:list={[
+              selectedImage === image.id
+                ? "border-[#3ba7d1] bg-[#3ba7d1]/10"
+                : "border-[#223649]",
+            ]}
+          >
+            <Image
+              src={image.src}
+              alt={image.alt}
+              width={80}
+              height={80}
+              class="w-full h-20 object-cover rounded-lg"
+            />
+            <div
+              class="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity checkmark-overlay"
+              class:list={[selectedImage === image.id ? "opacity-100" : ""]}
+            >
+              <div class="w-6 h-6 bg-[#3ba7d1] rounded-full flex items-center justify-center">
+                <svg
+                  class="w-4 h-4 text-white"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+              </div>
+            </div>
+          </label>
+        </div>
+      ))
+    }
+  </div>
+</div>
+
+<script>
+  // Handle image selection state
+  document.addEventListener("DOMContentLoaded", () => {
+    const imageSelector = document
+      .querySelector('[name="projectImage"]')
+      ?.closest(".flex.flex-col.gap-2");
+
+    if (imageSelector) {
+      const radioButtons = imageSelector.querySelectorAll(
+        'input[type="radio"]'
+      );
+      const labels = imageSelector.querySelectorAll(
+        'label[for^="projectImage-"]'
+      );
+
+      // Set initial state based on checked radio button
+      const checkedRadio = imageSelector.querySelector(
+        'input[type="radio"]:checked'
+      ) as HTMLInputElement;
+      if (checkedRadio) {
+        const index = Array.from(radioButtons).indexOf(checkedRadio);
+        if (index !== -1) {
+          const currentLabel = labels[index];
+          currentLabel.classList.remove("border-[#223649]");
+          currentLabel.classList.add("border-[#3ba7d1]", "bg-[#3ba7d1]/10");
+
+          const currentCheckmark =
+            currentLabel.querySelector(".checkmark-overlay");
+          if (currentCheckmark) {
+            currentCheckmark.classList.remove("opacity-0");
+            currentCheckmark.classList.add("opacity-100");
+          }
+        }
+      }
+
+      radioButtons.forEach((radio, index) => {
+        radio.addEventListener("change", () => {
+          // Remove all selected states
+          labels.forEach((label) => {
+            label.classList.remove("border-[#3ba7d1]", "bg-[#3ba7d1]/10");
+            label.classList.add("border-[#223649]");
+          });
+
+          // Hide all checkmarks
+          const checkmarks =
+            imageSelector.querySelectorAll(".checkmark-overlay");
+          checkmarks.forEach((checkmark) => {
+            checkmark.classList.remove("opacity-100");
+            checkmark.classList.add("opacity-0");
+          });
+
+          // Add selected state to current label
+          if ((radio as HTMLInputElement).checked) {
+            const currentLabel = labels[index];
+            currentLabel.classList.remove("border-[#223649]");
+            currentLabel.classList.add("border-[#3ba7d1]", "bg-[#3ba7d1]/10");
+
+            // Show checkmark for selected image
+            const currentCheckmark =
+              currentLabel.querySelector(".checkmark-overlay");
+            if (currentCheckmark) {
+              currentCheckmark.classList.remove("opacity-0");
+              currentCheckmark.classList.add("opacity-100");
+            }
+          }
+        });
+      });
+    }
+  });
+</script>

@@ -82,7 +82,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    const { name, description, keyObjectives, aiAnalysis } = body;
+    const { name, description, keyObjectives, aiAnalysis, image } = body;
 
     // Create project data (timestamps will be added by the service)
     const projectData: Omit<
@@ -95,10 +95,16 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       ...(aiAnalysis && { aiAnalysis }), // Only include aiAnalysis if it exists
     };
 
+    // Get the image URL based on the selected image
+    const imageUrl = image
+      ? `/src/assets/${image}.png`
+      : `/src/assets/alpha.png`;
+
     // Save to Firestore for authenticated users only
     const projectId = await FirestoreServerService.createProject(
       user.uid,
-      projectData
+      projectData,
+      imageUrl
     );
 
     return new Response(
