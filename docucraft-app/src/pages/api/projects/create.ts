@@ -2,7 +2,6 @@ import type { APIRoute } from "astro";
 import { app } from "@/firebase/server";
 import { getAuth } from "firebase-admin/auth";
 import { FirestoreServerService } from "@/services/firestore-server";
-import { validateProjectData } from "@/utils/validation";
 import type { Project } from "@/types/Project";
 
 export const POST: APIRoute = async ({ request, cookies }) => {

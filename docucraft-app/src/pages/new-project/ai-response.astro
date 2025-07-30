@@ -37,7 +37,7 @@ if (Astro.cookies.has("__session")) {
 }
 ---
 
-<MainLayout user={user} title="AI Project Analysis">
+<MainLayout user={user}>
   <div class="flex flex-1 justify-center py-5">
     <div class="layout-content-container flex flex-col w-full max-w-4xl py-5">
       <h2
@@ -374,8 +374,6 @@ if (Astro.cookies.has("__session")) {
   }
 
   function displayContent(aiAnalysis: AIAnalysis) {
-    console.log("Displaying content with:", aiAnalysis);
-
     const loadingState = document.getElementById("loadingState");
     const contentState = document.getElementById("contentState");
     if (loadingState) {
@@ -387,7 +385,6 @@ if (Astro.cookies.has("__session")) {
 
     // Display ERD
     if (aiAnalysis.erd) {
-      console.log("Displaying ERD:", aiAnalysis.erd);
       const erdSection = document.getElementById("erdSection");
       const erdContainer = document.getElementById("erdDiagram");
       if (erdSection && erdContainer) {

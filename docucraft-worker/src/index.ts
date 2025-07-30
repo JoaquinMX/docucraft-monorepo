@@ -2,6 +2,7 @@ import { fromHono } from "chanfana";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { AiCreate } from "./endpoints/aiCreate";
+import { env } from "cloudflare:workers";
 
 // Start a Hono app
 const app = new Hono<{ Bindings: Env }>();
@@ -10,8 +11,8 @@ const app = new Hono<{ Bindings: Env }>();
 app.use(
   "*",
   cors({
-    origin: ["https://docucraft-app.joaquinarturoaprendizaje.workers.dev"],
-    allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    origin: env.ORIGIN,
+    allowMethods: ["POST", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization"],
     credentials: true,
   })
