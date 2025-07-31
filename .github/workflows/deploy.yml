@@ -106,7 +106,7 @@ jobs:
           case ${{ matrix.app }} in
             "docucraft-app")
               # Deploy to Vercel
-              bunx vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }} --yes
+              bunx vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }} --yes --prod
               ;;
             "docucraft-landing")
               # Deploy to Cloudflare Pages

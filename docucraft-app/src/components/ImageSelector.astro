@@ -106,7 +106,7 @@ const { selectedImage = "alpha", name } = Astro.props;
 
 <script>
   // Handle image selection state
-  document.addEventListener("DOMContentLoaded", () => {
+  document.addEventListener("astro:page-load", () => {
     const imageSelector = document
       .querySelector('[name="projectImage"]')
       ?.closest(".flex.flex-col.gap-2");
@@ -119,44 +119,29 @@ const { selectedImage = "alpha", name } = Astro.props;
         'label[for^="projectImage-"]'
       );
 
-      // Set initial state based on checked radio button
-      const checkedRadio = imageSelector.querySelector(
-        'input[type="radio"]:checked'
-      ) as HTMLInputElement;
-      if (checkedRadio) {
-        const index = Array.from(radioButtons).indexOf(checkedRadio);
-        if (index !== -1) {
-          const currentLabel = labels[index];
-          currentLabel.classList.remove("border-[#223649]");
-          currentLabel.classList.add("border-[#3ba7d1]", "bg-[#3ba7d1]/10");
+      // Function to update UI based on selected radio button
+      const updateUI = () => {
+        // Remove all selected states
+        labels.forEach((label) => {
+          label.classList.remove("border-[#3ba7d1]", "bg-[#3ba7d1]/10");
+          label.classList.add("border-[#223649]");
+        });
 
-          const currentCheckmark =
-            currentLabel.querySelector(".checkmark-overlay");
-          if (currentCheckmark) {
-            currentCheckmark.classList.remove("opacity-0");
-            currentCheckmark.classList.add("opacity-100");
-          }
-        }
-      }
+        // Hide all checkmarks
+        const checkmarks =
+          imageSelector.querySelectorAll(".checkmark-overlay");
+        checkmarks.forEach((checkmark) => {
+          checkmark.classList.remove("opacity-100");
+          checkmark.classList.add("opacity-0");
+        });
 
-      radioButtons.forEach((radio, index) => {
-        radio.addEventListener("change", () => {
-          // Remove all selected states
-          labels.forEach((label) => {
-            label.classList.remove("border-[#3ba7d1]", "bg-[#3ba7d1]/10");
-            label.classList.add("border-[#223649]");
-          });
-
-          // Hide all checkmarks
-          const checkmarks =
-            imageSelector.querySelectorAll(".checkmark-overlay");
-          checkmarks.forEach((checkmark) => {
-            checkmark.classList.remove("opacity-100");
-            checkmark.classList.add("opacity-0");
-          });
-
-          // Add selected state to current label
-          if ((radio as HTMLInputElement).checked) {
+        // Add selected state to current label
+        const checkedRadio = imageSelector.querySelector(
+          'input[type="radio"]:checked'
+        );
+        if (checkedRadio) {
+          const index = Array.from(radioButtons).indexOf(checkedRadio);
+          if (index !== -1) {
             const currentLabel = labels[index];
             currentLabel.classList.remove("border-[#223649]");
             currentLabel.classList.add("border-[#3ba7d1]", "bg-[#3ba7d1]/10");
@@ -169,7 +154,15 @@ const { selectedImage = "alpha", name } = Astro.props;
               currentCheckmark.classList.add("opacity-100");
             }
           }
-        });
+        }
+      };
+
+      // Set initial state
+      updateUI();
+
+      // Add event listeners for changes
+      radioButtons.forEach((radio) => {
+        radio.addEventListener("change", updateUI);
       });
     }
   });

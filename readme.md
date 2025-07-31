@@ -1,6 +1,6 @@
 # **Project DocuCraft: Technical Report & Deployment Strategy**
 
-_Last Updated: July 22, 2025_
+_Last Updated: July 30, 2025_
 
 ---
 
@@ -8,11 +8,11 @@ _Last Updated: July 22, 2025_
 
 This report outlines the technical architecture, deployment strategy, and cost analysis for the **DocuCraft** project, which is managed as a monorepo containing three distinct applications.
 
-The chosen solution leverages a modern, serverless architecture to deliver a high-performance, secure, and scalable user experience. By utilizing **Vercel** for hosting and serverless functions and **Firebase (Firestore)** as the backend, we achieve global low latency, maximize performance, and introduce advanced AI capabilities, all while maintaining a cost-effective operational footprint.
+The chosen solution leverages a modern, serverless architecture to deliver a high-performance, secure, and scalable user experience. By utilizing **Vercel** for the main application hosting and **Cloudflare** for the landing page and serverless API, combined with **Firebase (Firestore)** as the backend, we achieve global low latency, maximize performance, and introduce advanced AI capabilities, all while maintaining a cost-effective operational footprint.
 
 **Key Highlights:**
 
-- **Global CDN:** Sub-second load times worldwide via Vercel's Edge Network.
+- **Global CDN:** Sub-second load times worldwide via Vercel's and Cloudflare's Edge Networks.
 - **Serverless AI:** Advanced AI features implemented securely through Cloudflare Workers.
 - **Automated Deployments:** A robust CI/CD pipeline ensures rapid and reliable updates.
 - **Cost-Effective:** Annual operational costs are minimized by leveraging generous free tiers and pay-as-you-go pricing.
@@ -25,8 +25,8 @@ The application is designed as a monorepo containing three separate projects, al
 
 ### **2.1. Project Breakdown**
 
-- **`docucraft_landing`**: A static, fast-loading marketing and landing page built with **Astro**.
-- **`docucraft-app`**: A Server-Side Rendered (SSR) application built with **Astro**, providing a dynamic and interactive user experience.
+- **`docucraft_landing`**: A static, fast-loading marketing and landing page built with **Astro**, deployed on Cloudflare Pages.
+- **`docucraft-app`**: A Server-Side Rendered (SSR) application built with **Astro**, providing a dynamic and interactive user experience, deployed on Vercel.
 - **`docucraft-worker`**: A serverless API built with **Hono** on Cloudflare Workers, handling backend logic and communication with AI services.
 
 ### **2.2. Technology Stack**
@@ -49,16 +49,21 @@ graph TD
     end
 
     subgraph "Vercel Edge Network"
-        C[Vercel for Hosting]
+        C[Vercel for docucraft-app]
         D[Vercel CDN]
-        E[docucraft-worker]
+    end
+
+    subgraph "Cloudflare Edge Network"
+        E[Cloudflare Pages for docucraft-landing]
+        F[Cloudflare CDN]
+        G[docucraft-worker]
     end
 
     subgraph "Backend Services"
-        F[Firebase]
-        G[Firebase Auth]
-        H[Firebase Firestore]
-        I[Firebase Storage]
+        H[Firebase]
+        I[Firebase Auth]
+        J[Firebase Firestore]
+        K[Firebase Storage]
     end
 
     subgraph "External Services"
@@ -66,22 +71,25 @@ graph TD
     end
 
     subgraph "Development and Deployment"
-        J[GitHub Monorepo] -->|git push - main| K[GitHub Actions CI/CD]
-        K -->|Deploy Astro Landing to Cloudflare Pages| C
-        K -->|Deploy Astro App to Vercel| D
-        K -->|Deploy Hono API| E
+        M[GitHub Monorepo] -->|git push - main| N[GitHub Actions CI/CD]
+        N -->|Deploy Astro Landing to Cloudflare Pages| E
+        N -->|Deploy Astro App to Vercel| C
+        N -->|Deploy Hono API to Cloudflare Workers| G
     end
 
-    A -->|HTTP Requests| D
+    A -->|HTTP Requests| F
     B -->|HTTP Requests| D
-    D -- "Cached Content" --> A & B
+    F -- "Cached Content" --> A
+    D -- "Cached Content" --> B
+    F -- "Dynamic Requests" --> E
     D -- "Dynamic Requests" --> C
 
-    B -->|API Calls| E
-    E -->|Backend API Calls| F
-    E -->|External AI| L
-    F --> G & H & I
+    B -->|API Calls| G
+    G -->|Backend API Calls| H
+    G -->|External AI| L
+    H --> I & J & K
 ```
+
 ---
 
 ## **3. Continuous Deployment (CI/CD)**
@@ -99,7 +107,10 @@ The GitHub Actions workflow is triggered on a push to the `main` branch and inte
 
 1.  **Build:** It builds the Astro applications (`docucraft_landing` and `docucraft-app`).
 2.  **Test:** It runs automated tests, including **Core Web Vitals** checks for the landing site to ensure high performance.
-3.  **Deploy:** It securely deploys the built applications to **Vercel** and the serverless API to **Vercel Serverless Functions**.
+3.  **Deploy:** It securely deploys the built applications to their respective platforms:
+    - `docucraft-landing` to **Cloudflare Pages**
+    - `docucraft-app` to **Vercel**
+    - `docucraft-worker` to **Cloudflare Workers**
 
 This entire process is seamless, requiring no manual intervention, and deployments are atomic, meaning the site is never in a broken state.
 
@@ -107,7 +118,7 @@ This entire process is seamless, requiring no manual intervention, and deploymen
 
 ## **4. Justification of Chosen Services**
 
-*(Note: For context on why these detailed justifications are included, please see Section 8: Author's Note.)*
+_(Note: For context on why these detailed justifications are included, please see Section 8: Author's Note.)_
 
 The technology stack was chosen to meet the core requirements: low latency, high performance, advanced serverless functionality, and cost control.
 
@@ -115,24 +126,38 @@ The technology stack was chosen to meet the core requirements: low latency, high
 
 The decision to build the `docucraft-app` with Astro instead of Flutter was driven by a critical feature requirement: the need to natively render complex `Mermaid.js` diagrams.
 
--   **Native Web Compatibility:** Astro, as a web-native framework, integrates seamlessly with JavaScript libraries like Mermaid.js. This ensures reliable rendering, performance, and access to the full feature set of the library.
--   **Addressing Flutter Web's Limitations:** While Flutter for Web is powerful for creating cross-platform UIs, it renders its own view using a canvas (`canvaskit`). This can create compatibility and performance challenges when integrating with JavaScript libraries that heavily manipulate the DOM, such as Mermaid.js. The switch to Astro mitigates these risks and ensures a core feature of the application works flawlessly.
+- **Native Web Compatibility:** Astro, as a web-native framework, integrates seamlessly with JavaScript libraries like Mermaid.js. This ensures reliable rendering, performance, and access to the full feature set of the library.
+- **Addressing Flutter Web's Limitations:** While Flutter for Web is powerful for creating cross-platform UIs, it renders its own view using a canvas (`canvaskit`). This can create compatibility and performance challenges when integrating with JavaScript libraries that heavily manipulate the DOM, such as Mermaid.js. The switch to Astro mitigates these risks and ensures a core feature of the application works flawlessly.
 
-### **4.2. Why Vercel?**
+### **4.2. Why Vercel for docucraft-app?**
 
--   **Rapid Development:** As a Backend-as-a-Service (BaaS), Firebase provides pre-built, highly scalable components for authentication, a NoSQL database (Firestore), and file storage. This drastically reduces development time.
--   **Excellent Serverless Integration:** The Firebase Admin SDKs are well-supported and can be used within Cloudflare Workers, enabling secure and efficient communication between our serverless API and backend.
-- **Optimized for Modern Frameworks:** Vercel is built by the creators of Next.js and has first-class support for Astro, ensuring optimal performance and a seamless developer experience for SSR applications. <mcreference link="https://betterstack.com/community/guides/scaling-nodejs/vercel-vs-netlify-vs-aws-amplify/" index="1">1</mcreference>
-- **Superior Developer Experience:** Vercel offers a zero-configuration deployment process. Pushing to Git automatically triggers builds and deployments, with preview URLs for every commit. <mcreference link="https://betterstack.com/community/guides/scaling-nodejs/vercel-vs-netlify-vs-aws-amplify/" index="1">1</mcreference>
-- **Performance and Scalability:** Vercel's Edge Network ensures low latency globally. Its serverless functions scale automatically, handling traffic spikes without manual intervention. <mcreference link="https://dev.to/lilxyzz/netlify-vs-vercel-2024-free-hosting-face-off-oo9" index="2">2</mcreference>
-- **Generous Free Tier:** Vercel's free tier is well-suited for personal projects and small applications, offering enough resources to get started without initial costs. <mcreference link="https://dev.to/lilxyzz/netlify-vs-vercel-2024-free-hosting-face-off-oo9" index="2">2</mcreference>
+The decision to host `docucraft-app` on Vercel instead of Cloudflare was driven by critical technical requirements and long-term reliability considerations:
 
-### **4.3. Why Firebase (Over Supabase)**
+- **Node.js Support:** Initially, the intention was to host the application on Cloudflare Workers. However, Cloudflare Workers' runtime environment doesn't support Node.js, which is essential for working with Firebase. While alternative packages exist for Firebase integration with Cloudflare Workers, they lack official support, which would compromise long-term reliability and security of the application.
 
--   **Faster Iteration with NoSQL:** The project's data structures are expected to evolve. Firebase's NoSQL database (Firestore) allows for flexible, schema-less data modeling, enabling faster development iterations compared to a relational database like PostgreSQL (used by Supabase).
--   **Seamless Astro Integration:** Firebase has excellent and straightforward integration with Astro, reducing the complexity and time required to connect the frontend application to the backend.
--   **Real-time Capabilities:** Firestore offers powerful real-time data synchronization out-of-the-box, which is ideal for building dynamic and interactive features in the `docucraft-app`.
--   **Scalability and Reliability:** As a Google Cloud product, Firebase is built to scale automatically and offers high reliability, ensuring the backend can handle significant user load without manual intervention.
+- **Complete Firebase Integration:** Vercel provides full Node.js support, enabling seamless integration with Firebase's official SDKs and ensuring reliable, secure communication with our backend services.
+
+- **Optimized for Modern Frameworks:** Vercel is built by the creators of Next.js and has first-class support for Astro, ensuring optimal performance and a seamless developer experience for SSR applications.
+
+- **Performance and Scalability:** Vercel's Edge Network ensures low latency globally. Its serverless functions scale automatically, handling traffic spikes without manual intervention.
+
+- **Generous Free Tier:** Vercel's free tier is well-suited for personal projects and small applications, offering enough resources to get started without initial costs.
+
+This technical constraint ultimately defined the choice of Vercel for the main application, while Cloudflare remains the optimal choice for the static landing page and the dedicated serverless API (`docucraft-worker`).
+
+### **4.3. Why Cloudflare for docucraft-landing and docucraft-worker?**
+
+- **Performance & Latency:** Cloudflare Pages serves the landing page content from its vast global network of data centers, ensuring that users anywhere in the world experience the fastest possible load times for static content.
+- **Integrated Serverless:** Cloudflare Workers allows us to run server-side code (like AI model inference) at the edge. This is significantly faster than traditional server-based APIs because the code runs closer to the user, reducing network latency.
+- **Security:** Cloudflare provides industry-leading DDoS protection and a Web Application Firewall (WAF) out-of-the-box.
+- **Cost:** The free tier is incredibly generous, and the pay-as-you-go pricing for Workers and other services is highly competitive.
+
+### **4.4. Why Firebase (Over Supabase)**
+
+- **Faster Iteration with NoSQL:** The project's data structures are expected to evolve. Firebase's NoSQL database (Firestore) allows for flexible, schema-less data modeling, enabling faster development iterations compared to a relational database like PostgreSQL (used by Supabase).
+- **Seamless Astro Integration:** Firebase has excellent and straightforward integration with Astro, reducing the complexity and time required to connect the frontend application to the backend.
+- **Real-time Capabilities:** Firestore offers powerful real-time data synchronization out-of-the-box, which is ideal for building dynamic and interactive features in the `docucraft-app`.
+- **Scalability and Reliability:** As a Google Cloud product, Firebase is built to scale automatically and offers high reliability, ensuring the backend can handle significant user load without manual intervention.
 
 ---
 
@@ -140,14 +165,16 @@ The decision to build the `docucraft-app` with Astro instead of Flutter was driv
 
 This projection is based on the pricing models of our chosen services. The architecture is designed to be highly cost-effective, primarily operating within the free tiers initially.
 
-| Service                | Free Tier Allowance                                       | Estimated Annual Cost (Beyond Free Tier)   |
-| ---------------------- | --------------------------------------------------------- | ------------------------------------------ |
-| **Vercel**             | 100 GB Bandwidth, 100 build-hours/month                   | **$0** (Free tier is sufficient for initial phase) |
+| Service                | Free Tier Allowance                                       | Estimated Annual Cost (Beyond Free Tier)     |
+| ---------------------- | --------------------------------------------------------- | -------------------------------------------- |
+| **Vercel**             | 100 GB Bandwidth, 100 build-hours/month                   | **$0** (Free tier is sufficient)             |
+| **Cloudflare Pages**   | 1 concurrent build, 500 builds/month                      | **$0** (Free tier is sufficient)             |
+| **Cloudflare Workers** | 100,000 requests/day                                      | **$0 - $60** / year ($5/mo per 10M reqs)     |
 | **Firebase**           | Generous free tier for DB, Auth, and Storage reads/writes | **$0 - $300** / year ($25/mo for Blaze plan) |
-| **GitHub Actions**     | 2,000 CI/CD minutes/month (for public repos)              | **$0** (Free tier is sufficient)           |
-| **TOTAL**              |                                                           | **~$0 - $360 / year**                      |
+| **GitHub Actions**     | 2,000 CI/CD minutes/month (for public repos)              | **$0** (Free tier is sufficient)             |
+| **TOTAL**              |                                                           | **~$0 - $360 / year**                        |
 
-**Conclusion:** The total annual cost to keep the website online is projected to be between **$0 and $360**. Costs will only be incurred if the application's usage grows significantly beyond the generous free tiers provided by Cloudflare and Firebase.
+**Conclusion:** The total annual cost to keep the website online is projected to be between **$0 and $360**. Costs will only be incurred if the application's usage grows significantly beyond the generous free tiers provided by Vercel, Cloudflare, and Firebase.
 
 ---
 
@@ -159,7 +186,7 @@ To ensure the website remains fast and reliable, we will continuously monitor it
 
 These metrics measure real-world user experience for loading performance, interactivity, and visual stability.
 
-- **Source:** We will use [Google PageSpeed Insights](https://pagespeed.web.dev/) and Cloudflare's built-in analytics to track these metrics.
+- **Source:** We will use [Google PageSpeed Insights](https://pagespeed.web.dev/), Vercel's built-in analytics for `docucraft-app`, and Cloudflare's built-in analytics for `docucraft-landing` to track these metrics.
 - **Reports:** Regular reports will be generated to identify and address any performance bottlenecks.
 
 ### **6.2. New Relic**
