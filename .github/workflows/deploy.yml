@@ -100,18 +100,11 @@ jobs:
 
           case ${{ matrix.app }} in
             "docucraft-app")
-              # Deploy to Vercel with environment variables
-              bunx vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }} --yes --prod \
-                --env FIREBASE_PROJECT_ID="${{ secrets.FIREBASE_PROJECT_ID }}" \
-                --env FIREBASE_PRIVATE_KEY_ID="${{ secrets.FIREBASE_PRIVATE_KEY_ID }}" \
-                --env FIREBASE_PRIVATE_KEY="${{ secrets.FIREBASE_PRIVATE_KEY }}" \
-                --env FIREBASE_CLIENT_EMAIL="${{ secrets.FIREBASE_CLIENT_EMAIL }}" \
-                --env FIREBASE_CLIENT_ID="${{ secrets.FIREBASE_CLIENT_ID }}" \
-                --env FIREBASE_AUTH_URI="${{ secrets.FIREBASE_AUTH_URI }}" \
-                --env FIREBASE_TOKEN_URI="${{ secrets.FIREBASE_TOKEN_URI }}" \
-                --env FIREBASE_AUTH_CERT_URL="${{ secrets.FIREBASE_AUTH_CERT_URL }}" \
-                --env FIREBASE_CLIENT_CERT_URL="${{ secrets.FIREBASE_CLIENT_CERT_URL }}" \
-                --env WORKER_URL="${{ secrets.WORKER_URL }}"
+              # Link to the existing Vercel project
+              bunx vercel link --token=${{ secrets.VERCEL_TOKEN }} --yes
+              
+              # Deploy to Vercel (it will use the environment variables set in Vercel dashboard)
+              bunx vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }} --yes --prod
               ;;
             "docucraft-landing")
               # Deploy to Cloudflare Pages
