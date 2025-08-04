@@ -146,7 +146,7 @@ if (Astro.cookies.has("__session")) {
     const workerUrl =
       import.meta.env.WORKER_URL ||
       process.env.WORKER_URL ||
-      "https://docucraft-worker.joaquinarturoaprendizaje.workers.dev/";
+      "https://docucraft-worker.joaquinarturoaprendizaje.workers.dev";
     const form = document.getElementById("projectForm") as HTMLFormElement;
     const submitButton = document.getElementById(
       "submitButton"
