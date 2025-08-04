@@ -11,7 +11,7 @@ const app = new Hono<{ Bindings: Env }>();
 app.use(
   "*",
   cors({
-    origin: env.ORIGIN,
+    origin: JSON.parse(env.ORIGIN),
     allowMethods: ["POST", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization"],
     credentials: true,
