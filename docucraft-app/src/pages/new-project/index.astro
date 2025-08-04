@@ -143,7 +143,10 @@ if (Astro.cookies.has("__session")) {
 <script>
   // Use astro:page-load to ensure this runs on every page navigation
   document.addEventListener("astro:page-load", () => {
-    const workerUrl = import.meta.env.WORKER_URL || "http://localhost:8787";
+    const workerUrl =
+      import.meta.env.WORKER_URL ||
+      process.env.WORKER_URL ||
+      "http://localhost:8787";
     const form = document.getElementById("projectForm") as HTMLFormElement;
     const submitButton = document.getElementById(
       "submitButton"
