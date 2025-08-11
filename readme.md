@@ -180,21 +180,24 @@ This projection is based on the pricing models of our chosen services. The archi
 
 ## **6. Performance & Reporting**
 
-To ensure the website remains fast and reliable, we will continuously monitor its performance using the following industry-standard tools.
+To ensure the website remains fast and reliable, we continuously monitor its performance using the following industry-standard tools.
 
 ### **6.1. Core Web Vitals**
 
-These metrics measure real-world user experience for loading performance, interactivity, and visual stability.
+Core Web Vitals measure real-world user experience for loading performance, interactivity, and visual stability.
 
-- **Source:** We will use [Google PageSpeed Insights](https://pagespeed.web.dev/), Vercel's built-in analytics for `docucraft-app`, and Cloudflare's built-in analytics for `docucraft-landing` to track these metrics.
-- **Reports:** Regular reports will be generated to identify and address any performance bottlenecks.
+- **`docucraft-landing` (Public Site):** This is the public-facing landing page. You can view its live performance score at any time using Google PageSpeed Insights.
+  - **[Check Live Score for `docucraft-landing`](https://pagespeed.web.dev/analysis?url=https://docucraft.joaquinmx.com/)**
+- **`docucraft-app` (Authenticated App):** The performance of the main application is monitored directly via **Vercel Analytics**, which provides Real User Monitoring (RUM) data from actual user sessions.
+
+**Source:** We use a combination of [Google PageSpeed Insights](https://pagespeed.web.dev/) for on-demand lab tests, and the built-in analytics from Vercel and Cloudflare for real-user monitoring.
 
 ### **6.2. New Relic**
 
-For more in-depth application performance monitoring (APM), we can integrate New Relic.
+For more in-depth application performance monitoring (APM), and as part of the educational purpose of this project, we have integrated New Relic.
 
 - **Functionality:** New Relic can provide detailed transaction traces, error tracking, and infrastructure monitoring for our Cloudflare Workers and backend services.
-- **Benefit:** This allows for proactive issue detection and deep-dive analysis to resolve complex problems before they impact users.
+- **Benefit:** This allows for proactive issue detection and deep-dive analysis to resolve complex problems before they impact users, providing a comprehensive dataset for learning and analysis.
 
 ---
 

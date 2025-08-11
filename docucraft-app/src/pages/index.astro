@@ -37,6 +37,7 @@ try {
     uid: userRecord.uid,
   };
 } catch (error) {
+  Astro.cookies.delete("__session", { path: "/" });
   return Astro.redirect("/signin");
 }
 
