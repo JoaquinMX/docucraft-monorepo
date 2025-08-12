@@ -16,7 +16,7 @@ export class FirestoreServerService {
       Project,
       "id" | "userId" | "image" | "createdAt" | "updatedAt"
     >,
-    imageUrl?: string
+    imageOrId?: string
   ): Promise<string> {
     try {
       const projectWithTimestamps = {
@@ -24,7 +24,10 @@ export class FirestoreServerService {
         userId,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        image: imageUrl || `https://lh3.googleusercontent.com/aida-public/AB6AXuBRfMiK-Xsf_XJBQ3H4OOzgt7XeJ2nlf0u5HP2OMdgTEFA6OqignBoIALpu7JH9qaD1CPWYihZ0v-LxhByazArNbkFSjDX64RrLUNm5bR87uvW4-mwwkEkWQJsYy1NgRURSibn5ZrYE2-dDsbn-opjBbXi52q6b--SQUoaDvlRLtnkcrQxFNFrXaDSFXGwOrl88zQ9madUbeeV5oStfpycOFShMuBaw93px9MaeHTBscgMuEuKVyYGrECq4nbvAqkegfbiphNC3Q`,
+        // Store image as an id when provided; fallback to legacy default URL for backward compatibility
+        image:
+          imageOrId ||
+          `https://lh3.googleusercontent.com/aida-public/AB6AXuBRfMiK-Xsf_XJBQ3H4OOzgt7XeJ2nlf0u5HP2OMdgTEFA6OqignBoIALpu7JH9qaD1CPWYihZ0v-LxhByazArNbkFSjDX64RrLUNm5bR87uvW4-mwwkEkWQJsYy1NgRURSibn5ZrYE2-dDsbn-opjBbXi52q6b--SQUoaDvlRLtnkcrQxFNFrXaDSFXGwOrl88zQ9madUbeeV5oStfpycOFShMuBaw93px9MaeHTBscgMuEuKVyYGrECq4nbvAqkegfbiphNC3Q`,
       };
 
       const docRef = await db

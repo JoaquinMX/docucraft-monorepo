@@ -3,6 +3,7 @@ import { app } from "@/firebase/server";
 import { getAuth } from "firebase-admin/auth";
 import { FirestoreServerService } from "@/services/firestore-server";
 import type { Project } from "@/types/Project";
+import type { ProjectImageId } from "@/constants/images";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
@@ -94,16 +95,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       ...(aiAnalysis && { aiAnalysis }), // Only include aiAnalysis if it exists
     };
 
-    // Get the image URL based on the selected image
-    const imageUrl = image
-      ? `/src/assets/${image}.png`
-      : `/src/assets/alpha.png`;
+    // Resolve selected image id (store canonical id, not a source path)
+    const imageId: ProjectImageId = (image as ProjectImageId) || "alpha";
 
     // Save to Firestore for authenticated users only
     const projectId = await FirestoreServerService.createProject(
       user.uid,
       projectData,
-      imageUrl
+      imageId
     );
 
     return new Response(
