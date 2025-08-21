@@ -1,3 +1,9 @@
+DocuCraft is a web application designed to streamline the process of turning an idea into a well-defined project by leveraging AI-driven documentation generation. Through an intelligently guided workflow, DocuCraft helps users create comprehensive project documentation, providing clarity on scope and objectives.
+
+This tool is ideal for freelancers, hobbyists, and small teams, enabling them to accelerate their development pipeline and accurately estimate project effort. By formalizing ideas into structured documentation, DocuCraft empowers builders to start their projects with confidence and a clear vision.
+
+---
+
 # **Project DocuCraft: Technical Report & Deployment Strategy**
 
 _Last Updated: July 30, 2025_
@@ -122,14 +128,14 @@ _(Note: For context on why these detailed justifications are included, please se
 
 The technology stack was chosen to meet the core requirements: low latency, high performance, advanced serverless functionality, and cost control.
 
-### **4.1. Why Astro for the Frontend (Over Flutter)**
+### **5.1. Why Astro for the Frontend (Over Flutter)**
 
 The decision to build the `docucraft-app` with Astro instead of Flutter was driven by a critical feature requirement: the need to natively render complex `Mermaid.js` diagrams.
 
 - **Native Web Compatibility:** Astro, as a web-native framework, integrates seamlessly with JavaScript libraries like Mermaid.js. This ensures reliable rendering, performance, and access to the full feature set of the library.
 - **Addressing Flutter Web's Limitations:** While Flutter for Web is powerful for creating cross-platform UIs, it renders its own view using a canvas (`canvaskit`). This can create compatibility and performance challenges when integrating with JavaScript libraries that heavily manipulate the DOM, such as Mermaid.js. The switch to Astro mitigates these risks and ensures a core feature of the application works flawlessly.
 
-### **4.2. Why Vercel for docucraft-app?**
+### **5.2. Why Vercel for docucraft-app?**
 
 The decision to host `docucraft-app` on Vercel instead of Cloudflare was driven by critical technical requirements and long-term reliability considerations:
 
@@ -145,14 +151,14 @@ The decision to host `docucraft-app` on Vercel instead of Cloudflare was driven 
 
 This technical constraint ultimately defined the choice of Vercel for the main application, while Cloudflare remains the optimal choice for the static landing page and the dedicated serverless API (`docucraft-worker`).
 
-### **4.3. Why Cloudflare for docucraft-landing and docucraft-worker?**
+### **5.3. Why Cloudflare for docucraft-landing and docucraft-worker?**
 
 - **Performance & Latency:** Cloudflare Pages serves the landing page content from its vast global network of data centers, ensuring that users anywhere in the world experience the fastest possible load times for static content.
 - **Integrated Serverless:** Cloudflare Workers allows us to run server-side code (like AI model inference) at the edge. This is significantly faster than traditional server-based APIs because the code runs closer to the user, reducing network latency.
 - **Security:** Cloudflare provides industry-leading DDoS protection and a Web Application Firewall (WAF) out-of-the-box.
 - **Cost:** The free tier is incredibly generous, and the pay-as-you-go pricing for Workers and other services is highly competitive.
 
-### **4.4. Why Firebase (Over Supabase)**
+### **5.4. Why Firebase (Over Supabase)**
 
 - **Faster Iteration with NoSQL:** The project's data structures are expected to evolve. Firebase's NoSQL database (Firestore) allows for flexible, schema-less data modeling, enabling faster development iterations compared to a relational database like PostgreSQL (used by Supabase).
 - **Seamless Astro Integration:** Firebase has excellent and straightforward integration with Astro, reducing the complexity and time required to connect the frontend application to the backend.
@@ -161,7 +167,7 @@ This technical constraint ultimately defined the choice of Vercel for the main a
 
 ---
 
-## **5. Annual Cost Analysis**
+## **6. Annual Cost Analysis**
 
 This projection is based on the pricing models of our chosen services. The architecture is designed to be highly cost-effective, primarily operating within the free tiers initially.
 
@@ -178,11 +184,11 @@ This projection is based on the pricing models of our chosen services. The archi
 
 ---
 
-## **6. Performance & Reporting**
+## **7. Performance & Reporting**
 
 To ensure the website remains fast and reliable, we continuously monitor its performance using the following industry-standard tools.
 
-### **6.1. Core Web Vitals**
+### **7.1. Core Web Vitals**
 
 Core Web Vitals measure real-world user experience for loading performance, interactivity, and visual stability.
 
@@ -192,7 +198,7 @@ Core Web Vitals measure real-world user experience for loading performance, inte
 
 **Source:** We use a combination of [Google PageSpeed Insights](https://pagespeed.web.dev/) for on-demand lab tests, and the built-in analytics from Vercel and Cloudflare for real-user monitoring.
 
-### **6.2. New Relic**
+### **7.2. New Relic**
 
 For more in-depth application performance monitoring (APM), and as part of the educational purpose of this project, we have integrated New Relic.
 
@@ -201,13 +207,13 @@ For more in-depth application performance monitoring (APM), and as part of the e
 
 ---
 
-## **7. Project Status**
+## **8. Project Status**
 
 **Under Development:** All three projects within this monorepo (`docucraft_landing`, `docucraft-app`, and `docucraft-worker`) are currently under active development.
 
 ---
 
-## **8. Author's Note**
+## **9. Author's Note**
 
 This document is intentionally detailed to serve as a comprehensive technical reference and a "single source of truth" for the project's architecture and decision-making process.
 
