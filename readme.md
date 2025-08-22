@@ -69,7 +69,6 @@ graph TD
         H[Firebase]
         I[Firebase Auth]
         J[Firebase Firestore]
-        K[Firebase Storage]
     end
 
     subgraph "External Services"
@@ -93,7 +92,7 @@ graph TD
     B -->|API Calls| G
     G -->|Backend API Calls| H
     G -->|External AI| L
-    H --> I & J & K
+    H --> I & J
 ```
 
 ---

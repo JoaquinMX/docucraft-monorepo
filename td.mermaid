@@ -4,17 +4,21 @@ graph TD
         B[docucraft_app]
     end
 
+    subgraph "Vercel Edge Network"
+        C[Vercel for docucraft-app]
+        D[Vercel CDN]
+    end
+
     subgraph "Cloudflare Edge Network"
-        C[Cloudflare Pages for Hosting]
-        D[Cloudflare CDN]
-        E[docucraft-worker]
+        E[Cloudflare Pages for docucraft-landing]
+        F[Cloudflare CDN]
+        G[docucraft-worker]
     end
 
     subgraph "Backend Services"
-        F[Firebase]
-        G[Firebase Auth]
-        H[Firebase Firestore]
-        I[Firebase Storage]
+        H[Firebase]
+        I[Firebase Auth]
+        J[Firebase Firestore]
     end
 
     subgraph "External Services"
@@ -22,18 +26,20 @@ graph TD
     end
 
     subgraph "Development and Deployment"
-        J[GitHub Monorepo] -->|git push - main| K[GitHub Actions CI/CD]
-        K -->|Deploy Astro Landing| C
-        K -->|Deploy Astro App| D
-        K -->|Deploy Hono API| E
+        M[GitHub Monorepo] -->|git push - main| N[GitHub Actions CI/CD]
+        N -->|Deploy Astro Landing to Cloudflare Pages| E
+        N -->|Deploy Astro App to Vercel| C
+        N -->|Deploy Hono API to Cloudflare Workers| G
     end
 
-    A -->|HTTP Requests| D
+    A -->|HTTP Requests| F
     B -->|HTTP Requests| D
-    D -- "Cached Content" --> A & B
+    F -- "Cached Content" --> A
+    D -- "Cached Content" --> B
+    F -- "Dynamic Requests" --> E
     D -- "Dynamic Requests" --> C
 
-    B -->|API Calls| E
-    E -->|Backend API Calls| F
-    E -->|External AI| L
-    F --> G & H & I
+    B -->|API Calls| G
+    G -->|Backend API Calls| H
+    G -->|External AI| L
+    H --> I & J
