@@ -4,3 +4,4 @@ docucraft-landing/.vscode/extensions.json
 docucraft-worker/.vscode/settings.json
 docucraft-app/.vercel/
 .vscode/settings.json
+.DS_Store

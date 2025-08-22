@@ -1,1 +1,64 @@
 @import "tailwindcss";
+
+@layer components {
+  .btn {
+    @apply px-4 py-2 rounded-lg text-sm font-bold transition-all duration-300;
+  }
+
+  .btn-primary {
+    @apply bg-[#2094f3] text-slate-50;
+  }
+
+  .btn-primary:hover {
+    @apply bg-[#1c83d6];
+    transform: scale(1.05);
+  }
+
+  .btn-secondary {
+    @apply bg-[#e7eef4] text-[#0d151c];
+  }
+
+  .btn-secondary:hover {
+    @apply bg-[#d0d8e0];
+    transform: scale(1.05);
+  }
+
+  .feature-capsule {
+    @apply rounded-lg border border-[#cedde8] bg-slate-50 p-4 flex flex-1 gap-3 items-center transition-all duration-300;
+  }
+
+  .feature-capsule:hover {
+    @apply border-[#2094f3] shadow-lg;
+    transform: translateY(-5px);
+  }
+
+  .pricing-card {
+    @apply rounded-xl border border-solid border-[#cedce8] bg-slate-50 p-6 flex flex-1 flex-col gap-4 transition-all duration-300;
+  }
+
+  .pricing-card:hover {
+    @apply border-[#2094f3] shadow-lg;
+    transform: translateY(-5px);
+  }
+
+  .nav-link {
+    @apply text-[#0d151c] transition-all duration-300;
+  }
+
+  .nav-link:hover {
+    @apply text-[#2094f3];
+  }
+
+  .nav-link::after {
+    content: "";
+    display: block;
+    width: 0;
+    height: 2px;
+    background: #2094f3;
+    transition: width 0.3s;
+  }
+
+  .nav-link:hover::after {
+    width: 100%;
+  }
+}
