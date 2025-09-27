@@ -9,9 +9,10 @@ interface Props {
   buttonText: string;
   buttonClass: string;
   features: string[];
+  href?: string;
 }
 
-const { title, badge, price, period, buttonText, buttonClass, features } = Astro.props;
+const { title, badge, price, period, buttonText, buttonClass, features, href } = Astro.props;
 ---
 
 <div class="pricing-card">
@@ -39,9 +40,15 @@ const { title, badge, price, period, buttonText, buttonClass, features } = Astro
       </p>
     )}
   </div>
-  <button class={`btn ${buttonClass}`}>
-    <span class="truncate">{buttonText}</span>
-  </button>
+  {href ? (
+    <a href={href} class={`btn ${buttonClass}`}>
+      <span class="truncate">{buttonText}</span>
+    </a>
+  ) : (
+    <button class={`btn ${buttonClass}`}>
+      <span class="truncate">{buttonText}</span>
+    </button>
+  )}
   <div class="flex flex-col gap-2">
     {features.map(feature => (
       <FeatureItem text={feature} />

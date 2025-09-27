@@ -33,12 +33,12 @@ import FAQItem from "@/components/FAQItem.astro";
                 documentation you need to start building.
               </h2>
             </div>
-            <button
+            <a
+              href="https://app-docucraft.joaquinmx.com/"
               class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 @[480px]:h-12 @[480px]:px-5 btn btn-primary"
-              onclick="window.location.href = 'https://app-docucraft.joaquinmx.com/'"
             >
               <span class="truncate">Start Your First Project</span>
-            </button>
+            </a>
           </div>
         </div>
       </div>
@@ -231,6 +231,7 @@ import FAQItem from "@/components/FAQItem.astro";
           price="Free"
           buttonText="Start Trial"
           buttonClass="btn-secondary"
+          href="https://app-docucraft.joaquinmx.com/"
           features={[
             "1 Free Project",
             "Use your own API keys"
@@ -243,6 +244,7 @@ import FAQItem from "@/components/FAQItem.astro";
           period="/month"
           buttonText="Go Pro"
           buttonClass="btn-primary"
+          href="/pricing"
           features={[
             "30 Projects/Month",
             "Full Mermaid Code Access",
@@ -254,6 +256,7 @@ import FAQItem from "@/components/FAQItem.astro";
           price="Contact"
           buttonText="Contact Sales"
           buttonClass="btn-secondary"
+          href="mailto:sales@docucraft.com"
           features={[
             "Collaborative Tools",
             "Dedicated Support"
