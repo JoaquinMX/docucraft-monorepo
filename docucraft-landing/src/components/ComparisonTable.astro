@@ -1,0 +1,71 @@
+---
+interface Row {
+  feature: string;
+  free: string;
+  pro: string;
+  enterprise: string;
+}
+
+interface Props {
+  headers: string[];
+  rows: Row[];
+}
+
+const { headers, rows } = Astro.props;
+---
+
+<div class="px-4 py-3 @container">
+  <div class="flex overflow-hidden rounded-xl border border-[#cedce8] bg-slate-50">
+    <table class="flex-1">
+      <thead>
+        <tr class="bg-slate-50">
+          {headers.map((header, index) => (
+            <th class={`table-column-${index} px-4 py-3 text-left text-[#0d151c] w-[400px] text-sm font-medium leading-normal`}>
+              {header}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map(row => (
+          <tr class="border-t border-t-[#cedce8]">
+            <td class="table-column-0 h-[72px] px-4 py-2 w-[400px] text-[#0d151c] text-sm font-normal leading-normal">
+              {row.feature}
+            </td>
+            <td class="table-column-1 h-[72px] px-4 py-2 w-[400px] text-[#49769c] text-sm font-normal leading-normal">
+              {row.free}
+            </td>
+            <td class="table-column-2 h-[72px] px-4 py-2 w-[400px] text-[#49769c] text-sm font-normal leading-normal">
+              {row.pro}
+            </td>
+            <td class="table-column-3 h-[72px] px-4 py-2 w-[400px] text-[#49769c] text-sm font-normal leading-normal">
+              {row.enterprise}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+  <style>
+    @container (max-width:120px) {
+      .table-column-0 {
+        display: none;
+      }
+    }
+    @container (max-width:240px) {
+      .table-column-1 {
+        display: none;
+      }
+    }
+    @container (max-width:360px) {
+      .table-column-2 {
+        display: none;
+      }
+    }
+    @container (max-width:480px) {
+      .table-column-3 {
+        display: none;
+      }
+    }
+  </style>
+</div>

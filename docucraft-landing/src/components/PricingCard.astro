@@ -1,0 +1,50 @@
+---
+import FeatureItem from "./FeatureItem.astro";
+
+interface Props {
+  title: string;
+  badge?: string;
+  price?: string;
+  period?: string;
+  buttonText: string;
+  buttonClass: string;
+  features: string[];
+}
+
+const { title, badge, price, period, buttonText, buttonClass, features } = Astro.props;
+---
+
+<div class="pricing-card">
+  <div class="flex flex-col gap-1">
+    <div class="flex items-center justify-between">
+      <h1 class="text-[#0d151c] text-base font-bold leading-tight">
+        {title}
+      </h1>
+      {badge && (
+        <p class="text-slate-50 text-xs font-medium leading-normal tracking-[0.015em] rounded-full bg-[#2090f3] px-3 py-[3px] text-center">
+          {badge}
+        </p>
+      )}
+    </div>
+    {price && (
+      <p class="flex items-baseline gap-1 text-[#0d151c]">
+        <span class="text-[#0d151c] text-4xl font-black leading-tight tracking-[-0.033em]">
+          {price}
+        </span>
+        {period && (
+          <span class="text-[#0d151c] text-base font-bold leading-tight">
+            {period}
+          </span>
+        )}
+      </p>
+    )}
+  </div>
+  <button class={`btn ${buttonClass}`}>
+    <span class="truncate">{buttonText}</span>
+  </button>
+  <div class="flex flex-col gap-2">
+    {features.map(feature => (
+      <FeatureItem text={feature} />
+    ))}
+  </div>
+</div>
