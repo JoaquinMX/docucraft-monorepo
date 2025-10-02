@@ -3,6 +3,7 @@ import { getAuth } from "firebase-admin/auth";
 import { app } from "../../../firebase/server";
 import { FirestoreServerService } from "@/services/firestore-server";
 import { validateProjectData } from "@/utils/validation";
+import { sanitizeProjectImageInput } from "@/utils/project";
 import type { Project } from "@/types/Project";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
@@ -62,8 +63,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             aiAnalysis: aiResponse,
           };
 
-          // Store image id (default to alpha if not specified)
-          const imageId = projectData.image || "alpha";
+          // Store sanitized image id (default handled by sanitizer)
+          const imageId = sanitizeProjectImageInput(projectData.image);
 
           // Save project to Firestore
           projectId = await FirestoreServerService.createProject(

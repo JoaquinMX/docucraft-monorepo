@@ -2,8 +2,7 @@ import type { APIRoute } from "astro";
 import { app } from "@/firebase/server";
 import { getAuth } from "firebase-admin/auth";
 import { FirestoreServerService } from "@/services/firestore-server";
-// import { validateAIAnalysis } from "@/utils/validation";
-import type { AIAnalysis } from "@/types/AIAnalysis";
+import { validateAIAnalysis } from "@/utils/validation";
 
 export const PUT: APIRoute = async ({ params, request, cookies }) => {
   try {
@@ -64,24 +63,41 @@ export const PUT: APIRoute = async ({ params, request, cookies }) => {
       );
     }
 
-    const body = await request.json();
-    const { aiAnalysis } = body;
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch (error) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Invalid JSON payload",
+        }),
+        {
+          status: 400,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
+
+    const aiAnalysis = (body as { aiAnalysis?: unknown })?.aiAnalysis;
 
     // Validate AI analysis data structure
-    // if (!validateAIAnalysis(aiAnalysis)) {
-    //   return new Response(
-    //     JSON.stringify({
-    //       success: false,
-    //       error: "Invalid AI analysis data structure",
-    //     }),
-    //     {
-    //       status: 400,
-    //       headers: {
-    //         "Content-Type": "application/json",
-    //       },
-    //     }
-    //   );
-    // }
+    if (!validateAIAnalysis(aiAnalysis)) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Invalid AI analysis data structure",
+        }),
+        {
+          status: 400,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
 
     // Anonymous users cannot save to Firestore
     if (isAnonymous) {

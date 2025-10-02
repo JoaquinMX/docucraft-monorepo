@@ -14,6 +14,14 @@ import { app } from "@/firebase/client";
 import { FIRESTORE_COLLECTIONS } from "@/constants/firestore";
 import type { Project } from "@/types/Project";
 import type { AIAnalysis } from "@/types/AIAnalysis";
+import {
+  DEFAULT_PROJECT_IMAGE_ID,
+  type ProjectImageId,
+} from "@/constants/images";
+import {
+  normalizeProjectRecord,
+  sanitizeProjectImageInput,
+} from "@/utils/project";
 
 const db = getFirestore(app);
 
@@ -27,7 +35,7 @@ export class FirestoreService {
       Project,
       "id" | "userId" | "createdAt" | "updatedAt" | "image"
     >,
-    imageUrl?: string
+    imageId: ProjectImageId = DEFAULT_PROJECT_IMAGE_ID
   ): Promise<string> {
     try {
       const projectWithTimestamps = {
@@ -35,7 +43,7 @@ export class FirestoreService {
         userId,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        image: imageUrl || `https://lh3.googleusercontent.com/aida-public/AB6AXuBRfMiK-Xsf_XJBQ3H4OOzgt7XeJ2nlf0u5HP2OMdgTEFA6OqignBoIALpu7JH9qaD1CPWYihZ0v-LxhByazArNbkFSjDX64RrLUNm5bR87uvW4-mwwkEkWQJsYy1NgRURSibn5ZrYE2-dDsbn-opjBbXi52q6b--SQUoaDvlRLtnkcrQxFNFrVXaDSFXGwOrl88zQ9madUbeeV5oStfpycOFShMuBaw93px9MaeHTBscgMuEuKVyYGrECq4nbvAqkegfbiphNC3Q`,
+        image: sanitizeProjectImageInput(imageId),
       };
 
       const docRef = await addDoc(
@@ -72,7 +80,7 @@ export class FirestoreService {
       const docSnap = await getDoc(docRef);
 
       if (docSnap.exists()) {
-        return { id: docSnap.id, ...docSnap.data() } as Project;
+        return normalizeProjectRecord(docSnap.id, docSnap.data(), userId);
       } else {
         return null;
       }
@@ -98,10 +106,9 @@ export class FirestoreService {
       );
       const querySnapshot = await getDocs(q);
 
-      return querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Project[];
+      return querySnapshot.docs.map((doc) =>
+        normalizeProjectRecord(doc.id, doc.data(), userId)
+      );
     } catch (error) {
       console.error("Error getting projects:", error);
       throw new Error("Failed to get projects");
@@ -124,8 +131,14 @@ export class FirestoreService {
         FIRESTORE_COLLECTIONS.PROJECTS,
         projectId
       );
+      const sanitizedUpdates: Partial<Project> = { ...updates };
+
+      if (updates.image) {
+        sanitizedUpdates.image = sanitizeProjectImageInput(updates.image);
+      }
+
       await updateDoc(docRef, {
-        ...updates,
+        ...sanitizedUpdates,
         updatedAt: new Date().toISOString(),
       });
     } catch (error) {

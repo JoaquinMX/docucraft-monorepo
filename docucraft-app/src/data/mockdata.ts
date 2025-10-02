@@ -6,55 +6,55 @@ export const projects: Project[] = [
     id: "1",
     name: "Project Alpha",
     description: "Description 1",
+    keyObjectives: "Objective 1",
     createdAt: "2024-01-01",
     updatedAt: "2024-01-15",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuBRfMiK-Xsf_XJBQ3H4OOzgt7XeJ2nlf0u5HP2OMdgTEFA6OqignBoIALpu7JH9qaD1CPWYihZ0v-LxhByazArNbkFSjDX64RrLUNm5bR87uvW4-mwwkEkWQJsYy1NgRURSibn5ZrYE2-dDsbn-opjBbXi52q6b--SQUoaDvlRLtnkcrQxFNFrVXaDSFXGwOrl88zQ9madUbeeV5oStfpycOFShMuBaw93px9MaeHTBscgMuEuKVyYGrECq4nbvAqkegfbiphNC3Q",
+    image: "alpha",
   },
   {
     id: "2",
     name: "Project Beta",
     description: "Description 2",
+    keyObjectives: "Objective 2",
     createdAt: "2024-02-01",
     updatedAt: "2024-02-15",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuD4sxboJMHRvf9OtyckB-ZNhIQQ7PTVSJlK6bjLjsqQaBA6xCb23ONpzhOtuA1gOQQM2uMloMpFi3m-AoKDOHJ3UchFLj9fySIcP3WaPKvRcWktE7pZ8u24ORul2r9z70qB5hMwkRSOmUR8_Hi6Nm5Gc5n3E8dBPzzhtGo5glJRA9q7lDmtEcrPoKnW8CZtDtuJp_wc3e5yfwWNw0gALE4JgZBQVFXIeDsvCCJuocISrOaZKZi7aKKTGtnygGx_biLKbHo-OqeuUg",
+    image: "beta",
   },
   {
     id: "3",
     name: "Project Gamma",
     description: "Description 3",
+    keyObjectives: "Objective 3",
     createdAt: "2024-03-01",
     updatedAt: "2024-03-15",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuBp3fqlJYiT7tg0jIUJHNsTvAhzrMA93G7bHlh9d1ptiZCLBvmslWu6veBcZ0NfHzj30NDxslEzmfkWba1tkS__FntK0-KF-oeMAtUMSSOwYvIyOs2xb5D6KYcYHxG-mvQnkzjZGbMVf-pbljKiJZOuX5_jyaWH46E0KAastCnXvzywcgkT3g8gBOUaKeUgg3mEASLW56BCjbWZfak43yAxm6JsHVKpxmfrSF94KayOVTncTK7NcjCSmejwjdW0rPi4a8AnLdvQXA",
+    image: "gamma",
   },
   {
     id: "4",
     name: "Project Delta",
     description: "Description 4",
+    keyObjectives: "Objective 4",
     createdAt: "2024-04-01",
     updatedAt: "2024-04-15",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuAYPgoccUo1YuAT-nnbvQoGQ1_IsQ64LxpW-uMJhSYnL4DlGuJK2ODMN-SWtQVm7ys-db8pCZNLYZ4bwqjsMqefgY37uAxMM9bbofCmOEU2zwjpO79ZhEK8MALzsepTYVOTx9ZpI5djWzxMQc_KR4e3jAFs46dt9aOaAHurhP60EZ7KtgVjro4nzHJbYGHJcUPgG_wfpADSmMwPzIujMqFYdaiXMavGQs_UTERgc-_GrxfvPcVEIcPm_YK6bvBty0x-Fz3Y5wZhZA",
+    image: "delta",
   },
   {
     id: "5",
     name: "Project Epsilon",
     description: "Description 5",
+    keyObjectives: "Objective 5",
     createdAt: "2024-05-01",
     updatedAt: "2024-05-15",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuD4-kTLUBVaRiW5t1gR3Bjaz9Sk3XzltZGiToolwC3-gXLwME-jmd7nW-NrKi62sN6iQmYZDiO0f2oyHtLwRIgL3A0DEltVhbzK7UmIUJkhk3qP88ZrPm4cHvl7_tapNUU9KQ858RgAtyzHyTKeTxW0MmqNgnd-7yMQuO8tuPQ07HX_la13ohsN9Kwk3DTKdSBC9JizHK1MorJk89v1aF50kNy9rZi79ozU6zNr6-_ziPkFxHugseDwg7HyFsYKQoABp46ARy8Ybg",
+    image: "alpha",
   },
   {
     id: "6",
     name: "Project Zeta",
     description: "Description 6",
+    keyObjectives: "Objective 6",
     createdAt: "2024-06-01",
     updatedAt: "2024-06-15",
-    image:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuBNnEgjfBDxmFj34mkGct7gTIUr6nkK-IdiTe-gO2zzMzd2bU0FBmF5tjISGCzj4sECgBCI-Q5FlL4Qy3b3G_5jkK2er1a0ZfKT1TI-ONQ5ZD2WKXlKZUFOfxSm5SZicHajxOp8jo2JfpuBs2p1kKFO-VnwJhjpn_PrREgbdXxzj61XFUOmaF9sDYsZgY_-TlFIzUEmLB_2dF_ZvfKIhCP3VYOLM235T5yB6zyRPyOLoaGxga17Tpb2YyzrozCXlatJ5ryfXaRcEQ",
+    image: "zeta",
   },
 ];
 

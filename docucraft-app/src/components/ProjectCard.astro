@@ -1,45 +1,18 @@
 ---
 import type { Project } from "@/types/Project";
 import { Image } from "astro:assets";
-import { PROJECT_IMAGES } from "@/constants/images";
+import { resolveProjectImageSrc } from "@/utils/project";
 const { project: Project, href } = Astro.props;
-import type { ProjectImage, ProjectImageId } from "@/constants/images";
 ---
 
 <a href={href} class="flex flex-col gap-3 pb-3">
-  {
-    // Resolve stored image value to an actual asset src
-    (() => {
-      const raw = (Project.image as unknown as string) || "alpha";
-
-      // Try direct id
-      let resolved = (PROJECT_IMAGES as any)[raw as ProjectImageId]?.src as
-        | ProjectImage["src"]
-        | undefined;
-
-      // If stored as legacy local path like "/src/assets/delta.png", extract id
-      if (!resolved && raw.startsWith("/src/assets/") && raw.endsWith(".png")) {
-        const filename = raw.split("/").pop() || "";
-        const id = filename.replace(/\.png$/i, "") as ProjectImageId;
-        resolved = (PROJECT_IMAGES as any)[id]?.src as
-          | ProjectImage["src"]
-          | undefined;
-      }
-
-      // If still not resolved, it might be a remote absolute URL; let Image handle it
-      const srcToUse = resolved || (raw as unknown as ProjectImage["src"]);
-
-      return (
-        <Image
-          class="w-full bg-center bg-no-repeat aspect-square bg-cover rounded-lg"
-          src={srcToUse}
-          alt={Project.name}
-          width={100}
-          height={100}
-        />
-      );
-    })()
-  }
+  <Image
+    class="w-full bg-center bg-no-repeat aspect-square bg-cover rounded-lg"
+    src={resolveProjectImageSrc(Project.image)}
+    alt={Project.name}
+    width={100}
+    height={100}
+  />
 
   <div>
     <p class="text-white text-base font-medium leading-normal">

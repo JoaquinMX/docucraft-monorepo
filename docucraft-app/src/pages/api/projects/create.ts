@@ -3,7 +3,9 @@ import { app } from "@/firebase/server";
 import { getAuth } from "firebase-admin/auth";
 import { FirestoreServerService } from "@/services/firestore-server";
 import type { Project } from "@/types/Project";
-import type { ProjectImageId } from "@/constants/images";
+import { DEFAULT_PROJECT_IMAGE_ID } from "@/constants/images";
+import { sanitizeProjectImageInput } from "@/utils/project";
+import { validateProjectData } from "@/utils/validation";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
@@ -47,23 +49,42 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    const body = await request.json();
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch (error) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Invalid JSON payload",
+        }),
+        {
+          status: 400,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
 
-    // // Validate project data structure
-    // if (!validateProjectData(body)) {
-    //   return new Response(
-    //     JSON.stringify({
-    //       success: false,
-    //       error: "Invalid project data structure",
-    //     }),
-    //     {
-    //       status: 400,
-    //       headers: {
-    //         "Content-Type": "application/json",
-    //       },
-    //     }
-    //   );
-    // }
+    if (!validateProjectData(body)) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Invalid project data structure",
+        }),
+        {
+          status: 400,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
+
+    const sanitizedImageId = sanitizeProjectImageInput(
+      body.image ?? DEFAULT_PROJECT_IMAGE_ID
+    );
 
     // Anonymous users cannot save to Firestore
     if (isAnonymous) {
@@ -82,7 +103,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    const { name, description, keyObjectives, aiAnalysis, image } = body;
+    const { name, description, keyObjectives, aiAnalysis } = body;
 
     // Create project data (timestamps will be added by the service)
     const projectData: Omit<
@@ -92,17 +113,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       name: name.trim(),
       description: description.trim(),
       keyObjectives: keyObjectives.trim(),
-      ...(aiAnalysis && { aiAnalysis }), // Only include aiAnalysis if it exists
+      ...(aiAnalysis && { aiAnalysis }),
     };
-
-    // Resolve selected image id (store canonical id, not a source path)
-    const imageId: ProjectImageId = (image as ProjectImageId) || "alpha";
 
     // Save to Firestore for authenticated users only
     const projectId = await FirestoreServerService.createProject(
       user.uid,
       projectData,
-      imageId
+      sanitizedImageId
     );
 
     return new Response(
