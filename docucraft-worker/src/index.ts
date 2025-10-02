@@ -8,6 +8,7 @@ import { AiCreateC4 } from "./endpoints/aiCreateC4";
 import { AiCreateUserStories } from "./endpoints/aiCreateUserStories";
 import { AiCreateGantt } from "./endpoints/aiCreateGantt";
 import { AiCreateKanban } from "./endpoints/aiCreateKanban";
+import { CreatePaymentIntent } from "./endpoints/createPaymentIntent";
 import { env } from "cloudflare:workers";
 
 // Start a Hono app
@@ -43,6 +44,7 @@ openapi.post("/api/ai/c4", AiCreateC4);
 openapi.post("/api/ai/user-stories", AiCreateUserStories);
 openapi.post("/api/ai/gantt", AiCreateGantt);
 openapi.post("/api/ai/kanban", AiCreateKanban);
+openapi.post("/api/payments", CreatePaymentIntent);
 
 // You may also register routes for non OpenAPI directly on Hono
 // app.get('/test', (c) => c.text('Hono!'))
