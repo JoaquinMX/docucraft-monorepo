@@ -222,13 +222,24 @@ Key Objectives: ${keyObjectives}`;
           throw new Error(projectResult.error || "Failed to create project");
         }
 
+        const isAnonymous = Boolean(projectResult.isAnonymous);
         const projectId = projectResult.projectId;
+
+        if (!isAnonymous && !projectId) {
+          throw new Error("Missing project identifier from server response");
+        }
+
+        const resolvedProjectId =
+          projectId ||
+          (typeof crypto !== "undefined" && "randomUUID" in crypto
+            ? crypto.randomUUID()
+            : `temp-${Date.now()}`);
 
         // Store project data in localStorage for the save functionality
         localStorage.setItem(
           "projectData",
           JSON.stringify({
-            id: projectId,
+            id: resolvedProjectId,
             name: projectName,
             description: projectDescription,
             keyObjectives: keyObjectives,
@@ -256,28 +267,30 @@ Key Objectives: ${keyObjectives}`;
         // Store the AI response in localStorage for the next page
         localStorage.setItem("aiResponse", JSON.stringify(aiResult));
 
-        // Update the project with AI analysis
-        const updateResponse = await fetch(
-          `/api/projects/${projectId}/ai-analysis`,
-          {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              aiAnalysis: aiResult,
-            }),
-          }
-        );
-
-        if (!updateResponse.ok) {
-          console.warn(
-            "Failed to update project with AI analysis, but continuing..."
+        // Update the project with AI analysis for authenticated users only
+        if (!isAnonymous && projectId) {
+          const updateResponse = await fetch(
+            `/api/projects/${projectId}/ai-analysis`,
+            {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                aiAnalysis: aiResult,
+              }),
+            }
           );
+
+          if (!updateResponse.ok) {
+            console.warn(
+              "Failed to update project with AI analysis, but continuing..."
+            );
+          }
         }
 
         // Check if user is anonymous from the API response
-        if (projectResult.isAnonymous) {
+        if (isAnonymous) {
           // Redirect to the AI response page for anonymous users
           window.location.href = "/new-project/ai-response";
         } else {

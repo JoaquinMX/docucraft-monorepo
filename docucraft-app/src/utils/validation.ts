@@ -3,7 +3,7 @@ import type { AIAnalysis, UserStory } from "@/types/AIAnalysis";
 /**
  * Validates AI analysis data structure
  */
-export function validateAIAnalysis(aiAnalysis: any): aiAnalysis is AIAnalysis {
+export function validateAIAnalysis(aiAnalysis: unknown): aiAnalysis is AIAnalysis {
   if (!aiAnalysis || typeof aiAnalysis !== "object") {
     return false;
   }
@@ -23,8 +23,11 @@ export function validateAIAnalysis(aiAnalysis: any): aiAnalysis is AIAnalysis {
   }
 
   // Validate user stories if present
-  if (aiAnalysis.userStories && Array.isArray(aiAnalysis.userStories)) {
-    for (const story of aiAnalysis.userStories) {
+  if (
+    "userStories" in aiAnalysis &&
+    Array.isArray((aiAnalysis as { userStories?: unknown }).userStories)
+  ) {
+    for (const story of (aiAnalysis as { userStories: unknown[] }).userStories) {
       if (!validateUserStory(story)) {
         return false;
       }
@@ -37,39 +40,75 @@ export function validateAIAnalysis(aiAnalysis: any): aiAnalysis is AIAnalysis {
 /**
  * Validates user story structure
  */
-export function validateUserStory(story: any): story is UserStory {
+export function validateUserStory(story: unknown): story is UserStory {
+  if (!story || typeof story !== "object") {
+    return false;
+  }
+
+  const candidate = story as Record<string, unknown>;
+
+  const hasValidAcceptanceCriteria = (() => {
+    const criteria = candidate.acceptanceCriteria;
+    if (criteria === undefined) {
+      return true;
+    }
+
+    return (
+      Array.isArray(criteria) &&
+      criteria.every((criterion) => typeof criterion === "string")
+    );
+  })();
+
   return (
-    story &&
-    typeof story === "object" &&
-    typeof story.role === "string" &&
-    typeof story.goal === "string" &&
-    typeof story.benefit === "string" &&
-    (story.storyPoints === undefined || typeof story.storyPoints === "number") &&
-    (story.acceptanceCriteria === undefined || 
-      (Array.isArray(story.acceptanceCriteria) &&
-       story.acceptanceCriteria.every(
-         (criterion: any) => typeof criterion === "string"
-       )))
+    typeof candidate.role === "string" &&
+    typeof candidate.goal === "string" &&
+    typeof candidate.benefit === "string" &&
+    (candidate.storyPoints === undefined ||
+      typeof candidate.storyPoints === "number") &&
+    hasValidAcceptanceCriteria
   );
 }
 
 /**
  * Validates project data structure
  */
-export function validateProjectData(data: any): data is {
+export function validateProjectData(data: unknown): data is {
   name: string;
   description: string;
   keyObjectives: string;
-  image?: string;
+  image?: unknown;
   aiAnalysis?: AIAnalysis;
 } {
-  return (
-    data &&
-    typeof data === "object" &&
-    typeof data.name === "string" &&
-    typeof data.description === "string" &&
-    typeof data.keyObjectives === "string" &&
-    (data.image === undefined || typeof data.image === "string") &&
-    (data.aiAnalysis === undefined || validateAIAnalysis(data.aiAnalysis))
-  );
+  if (!data || typeof data !== "object") {
+    return false;
+  }
+
+  const candidate = data as Record<string, unknown>;
+
+  const hasValidTextField = (value: unknown): value is string =>
+    typeof value === "string" && value.trim().length > 0;
+
+  if (
+    !hasValidTextField(candidate.name) ||
+    !hasValidTextField(candidate.description) ||
+    !hasValidTextField(candidate.keyObjectives)
+  ) {
+    return false;
+  }
+
+  if (
+    candidate.image !== undefined &&
+    typeof candidate.image !== "string"
+  ) {
+    return false;
+  }
+
+  if (
+    candidate.aiAnalysis !== undefined &&
+    !validateAIAnalysis(candidate.aiAnalysis)
+  ) {
+    return false;
+  }
+
+  return true;
 }
