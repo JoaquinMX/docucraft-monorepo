@@ -144,8 +144,8 @@ if (Astro.cookies.has("__session")) {
   // Use astro:page-load to ensure this runs on every page navigation
   document.addEventListener("astro:page-load", () => {
     const workerUrl =
-      import.meta.env.WORKER_URL ||
-      process.env.WORKER_URL ||
+      import.meta.env.WORKER_URL ??
+      (typeof process !== "undefined" ? process.env.WORKER_URL : undefined) ??
       "https://docucraft-worker.joaquinarturoaprendizaje.workers.dev";
     const form = document.getElementById("projectForm") as HTMLFormElement;
     const submitButton = document.getElementById(
