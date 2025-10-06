@@ -65,10 +65,14 @@ export class CreatePaymentIntent extends OpenAPIRoute {
     const data = await this.getValidatedData<typeof this.schema>();
     const requestBody = data.body ?? {};
 
-    const amountInUsd = requestBody.amount ?? 20;
-    const currency = requestBody.currency ?? "usd";
+    const requestedAmount = requestBody.amount ?? 20;
+    const currency = (requestBody.currency ?? "usd").toLowerCase();
 
-    const amountInCents = Math.round(amountInUsd * 100);
+    const currencyExponent = getCurrencyExponent(currency);
+    const amountInMinorUnits = toMinorCurrencyUnit(
+      requestedAmount,
+      currencyExponent
+    );
 
     const { STRIPE_SECRET_KEY } = env(c) as Env;
 
@@ -88,7 +92,7 @@ export class CreatePaymentIntent extends OpenAPIRoute {
     }
 
     const body = new URLSearchParams();
-    body.append("amount", amountInCents.toString());
+    body.append("amount", amountInMinorUnits.toString());
     body.append("currency", currency);
     body.append("automatic_payment_methods[enabled]", "true");
 
@@ -151,4 +155,48 @@ export class CreatePaymentIntent extends OpenAPIRoute {
       }
     );
   }
+}
+
+const ZERO_DECIMAL_CURRENCIES = new Set([
+  "bif",
+  "clp",
+  "djf",
+  "gnf",
+  "jpy",
+  "kmf",
+  "krw",
+  "mga",
+  "pyg",
+  "rwf",
+  "ugx",
+  "vnd",
+  "vuv",
+  "xaf",
+  "xof",
+  "xpf",
+]);
+
+const THREE_DECIMAL_CURRENCIES = new Set([
+  "bhd",
+  "jod",
+  "kwd",
+  "omr",
+  "tnd",
+]);
+
+function getCurrencyExponent(currency: string): number {
+  if (THREE_DECIMAL_CURRENCIES.has(currency)) {
+    return 3;
+  }
+
+  if (ZERO_DECIMAL_CURRENCIES.has(currency)) {
+    return 0;
+  }
+
+  return 2;
+}
+
+function toMinorCurrencyUnit(amount: number, exponent: number): number {
+  const multiplier = 10 ** exponent;
+  return Math.round(amount * multiplier);
 }
