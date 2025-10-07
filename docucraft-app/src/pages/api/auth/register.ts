@@ -2,7 +2,7 @@ import type { APIRoute } from "astro";
 import { getAuth } from "firebase-admin/auth";
 import { app } from "../../../firebase/server";
 import { FirestoreServerService } from "@/services/firestore-server";
-import { validateProjectData } from "@/utils/validation";
+import { validateProjectData, transformAIResponseToAIAnalysis } from "@/utils/validation";
 import { sanitizeProjectImageInput } from "@/utils/project";
 import type { Project } from "@/types/Project";
 
@@ -52,6 +52,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
         // Validate project data
         if (validateProjectData(projectData)) {
+          // Transform AI response to filter out invalid diagrams
+          const transformedAIAnalysis = aiResponse.aiResponse
+            ? transformAIResponseToAIAnalysis(aiResponse.aiResponse)
+            : undefined;
+
           // Create project data for Firestore
           const firestoreProjectData: Omit<
             Project,
@@ -60,7 +65,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
             name: projectData.name.trim(),
             description: projectData.description.trim(),
             keyObjectives: projectData.keyObjectives.trim(),
-            aiAnalysis: aiResponse,
+            ...(transformedAIAnalysis && Object.keys(transformedAIAnalysis).length > 0 && { aiAnalysis: transformedAIAnalysis }),
           };
 
           // Store sanitized image id (default handled by sanitizer)

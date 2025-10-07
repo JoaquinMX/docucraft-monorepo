@@ -63,7 +63,12 @@ export class FirestoreServerService {
       const docSnap = await docRef.get();
 
       if (docSnap.exists) {
-        return normalizeProjectRecord(docSnap.id, docSnap.data(), userId);
+        const data = docSnap.data();
+        if (data) {
+          return normalizeProjectRecord(docSnap.id, data, userId);
+        } else {
+          return null;
+        }
       } else {
         return null;
       }
@@ -125,7 +130,7 @@ export class FirestoreServerService {
   }
 
   /**
-   * Update AI analysis for a project
+   * Update AI analysis for a project (replaces entire analysis)
    */
   static async updateAIAnalysis(
     userId: string,
@@ -145,6 +150,46 @@ export class FirestoreServerService {
     } catch (error) {
       console.error("Error updating AI analysis:", error);
       throw new Error("Failed to update AI analysis");
+    }
+  }
+
+  /**
+   * Update partial AI analysis for a project (merges with existing analysis)
+   */
+  static async updatePartialAIAnalysis(
+    userId: string,
+    projectId: string,
+    partialAIAnalysis: Partial<AIAnalysis>
+  ): Promise<void> {
+    try {
+      const docRef = db
+        .collection(FIRESTORE_COLLECTIONS.USER_PROJECTS)
+        .doc(userId)
+        .collection(FIRESTORE_COLLECTIONS.PROJECTS)
+        .doc(projectId);
+
+      // Get current project to merge with existing AI analysis
+      const docSnap = await docRef.get();
+      if (!docSnap.exists) {
+        throw new Error("Project not found");
+      }
+
+      const currentData = docSnap.data();
+      const currentAIAnalysis = (currentData?.aiAnalysis as AIAnalysis) || {};
+
+      // Merge partial updates with existing analysis
+      const updatedAIAnalysis: AIAnalysis = {
+        ...currentAIAnalysis,
+        ...partialAIAnalysis,
+      };
+
+      await docRef.update({
+        aiAnalysis: updatedAIAnalysis,
+        updatedAt: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error("Error updating partial AI analysis:", error);
+      throw new Error("Failed to update partial AI analysis");
     }
   }
 

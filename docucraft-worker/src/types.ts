@@ -10,4 +10,5 @@ export const AIResponse = z.object({
 
 export const AIRequest = z.object({
   text: Str(),
+  selectedDiagrams: z.array(z.string()).optional(),
 });

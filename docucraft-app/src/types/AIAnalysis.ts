@@ -5,6 +5,12 @@ export interface AIAnalysis {
   userStories?: UserStory[];
   gantt?: string;
   kanban?: string;
+  erdStatus?: 'pending' | 'completed' | 'failed';
+  architectureStatus?: 'pending' | 'completed' | 'failed';
+  c4Status?: 'pending' | 'completed' | 'failed';
+  userStoriesStatus?: 'pending' | 'completed' | 'failed';
+  ganttStatus?: 'pending' | 'completed' | 'failed';
+  kanbanStatus?: 'pending' | 'completed' | 'failed';
 }
 
 export interface UserStory {

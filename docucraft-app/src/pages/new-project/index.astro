@@ -1,6 +1,7 @@
 ---
 import MainLayout from "@layouts/MainLayout.astro";
 import ImageSelector from "@/components/ImageSelector.astro";
+import DiagramSelector from "@/components/DiagramSelector.astro";
 import { app } from "../../firebase/server";
 import { getAuth } from "firebase-admin/auth";
 
@@ -116,6 +117,8 @@ if (Astro.cookies.has("__session")) {
 
         <ImageSelector name="projectImage" selectedImage="alpha" />
 
+        <DiagramSelector />
+
         <button
           type="submit"
           id="submitButton"
@@ -128,6 +131,13 @@ if (Astro.cookies.has("__session")) {
           >
           </div>
         </button>
+
+        <div id="progressContainer" class="hidden mt-4 space-y-2">
+          <p class="text-white text-sm font-medium">Generating diagrams...</p>
+          <div id="progressItems" class="space-y-1">
+            <!-- Progress items will be added here dynamically -->
+          </div>
+        </div>
       </form>
 
       <div
@@ -141,12 +151,11 @@ if (Astro.cookies.has("__session")) {
 </MainLayout>
 
 <script>
+  import { transformWorkerResponseToAIAnalysis } from "@/utils/validation";
+
   // Use astro:page-load to ensure this runs on every page navigation
   document.addEventListener("astro:page-load", () => {
-    const workerUrl =
-      import.meta.env.WORKER_URL ??
-      (typeof process !== "undefined" ? process.env.WORKER_URL : undefined) ??
-      "https://docucraft-worker.joaquinarturoaprendizaje.workers.dev";
+    const workerUrl = import.meta.env.PUBLIC_WORKER_URL;
     const form = document.getElementById("projectForm") as HTMLFormElement;
     const submitButton = document.getElementById(
       "submitButton"
@@ -157,6 +166,12 @@ if (Astro.cookies.has("__session")) {
     ) as HTMLDivElement;
     const errorMessage = document.getElementById(
       "errorMessage"
+    ) as HTMLDivElement;
+    const progressContainer = document.getElementById(
+      "progressContainer"
+    ) as HTMLDivElement;
+    const progressItems = document.getElementById(
+      "progressItems"
     ) as HTMLDivElement;
 
     if (
@@ -188,6 +203,33 @@ if (Astro.cookies.has("__session")) {
         const projectDescription = formData.get("projectDescription") as string;
         const keyObjectives = formData.get("keyObjectives") as string;
         const projectImage = formData.get("projectImage") as string;
+        const selectedDiagrams = formData.getAll("selectedDiagrams") as string[];
+
+        // Show progress for selected diagrams
+        if (selectedDiagrams.length > 1) {
+          progressContainer.classList.remove("hidden");
+          progressItems.innerHTML = "";
+
+          // Get diagram names from the mockdata (assuming it's available)
+          const diagramNames: Record<string, string> = {
+            erd: "ERD",
+            architecture: "Architecture",
+            c4: "C4 Diagram",
+            "user-stories": "User Stories",
+            gantt: "Gantt Chart",
+            kanban: "Kanban",
+          };
+
+          selectedDiagrams.forEach((diagramId: string) => {
+            const item = document.createElement("div");
+            item.className = "flex items-center gap-2 text-sm";
+            item.innerHTML = `
+              <div class="animate-spin rounded-full h-3 w-3 border-b border-[#3ba7d1]"></div>
+              <span class="text-white">Generating ${diagramNames[diagramId] || diagramId}...</span>
+            `;
+            progressItems.appendChild(item);
+          });
+        }
 
         // Create the AI request text
         const aiRequestText = `Project Name: ${projectName}
@@ -244,6 +286,7 @@ Key Objectives: ${keyObjectives}`;
             description: projectDescription,
             keyObjectives: keyObjectives,
             image: projectImage,
+            selectedDiagrams: selectedDiagrams,
           })
         );
 
@@ -255,6 +298,7 @@ Key Objectives: ${keyObjectives}`;
           },
           body: JSON.stringify({
             text: aiRequestText,
+            selectedDiagrams: selectedDiagrams,
           }),
         });
 
@@ -264,11 +308,22 @@ Key Objectives: ${keyObjectives}`;
 
         const aiResult = await aiResponse.json();
 
+        // Check for any failed diagrams
+        const failedDiagrams = Object.entries(aiResult.results || {})
+          .filter(([_, result]: [string, any]) => !result.success)
+          .map(([diagramId, result]: [string, any]) => `${diagramId}: ${result.error}`);
+
+        if (failedDiagrams.length > 0) {
+          console.warn("Some diagrams failed to generate:", failedDiagrams);
+          // Continue with successful diagrams, but log the failures
+        }
+
         // Store the AI response in localStorage for the next page
         localStorage.setItem("aiResponse", JSON.stringify(aiResult));
 
         // Update the project with AI analysis for authenticated users only
         if (!isAnonymous && projectId) {
+          const transformedAIAnalysis = transformWorkerResponseToAIAnalysis(aiResult);
           const updateResponse = await fetch(
             `/api/projects/${projectId}/ai-analysis`,
             {
@@ -277,7 +332,7 @@ Key Objectives: ${keyObjectives}`;
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({
-                aiAnalysis: aiResult,
+                aiAnalysis: transformedAIAnalysis,
               }),
             }
           );
@@ -314,6 +369,7 @@ Key Objectives: ${keyObjectives}`;
         submitButton.disabled = false;
         buttonText.textContent = "Create Project";
         loadingSpinner.classList.add("hidden");
+        progressContainer.classList.add("hidden");
       }
     });
   });

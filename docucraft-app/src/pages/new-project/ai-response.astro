@@ -253,6 +253,7 @@ if (Astro.cookies.has("__session")) {
 <script>
   import mermaid from "mermaid";
   import type { AIAnalysis } from "@/types/AIAnalysis";
+  import { transformAIResponseToAIAnalysis, transformWorkerResponseToAIAnalysis } from "@/utils/validation";
   import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
   import { app } from "../../firebase/client";
 
@@ -319,48 +320,40 @@ if (Astro.cookies.has("__session")) {
     try {
       const data = JSON.parse(aiResponse);
 
-      // Transform the AI response from array format to flat object format
-      const transformedData = transformAIResponse(data.aiResponse);
-      displayContent(transformedData);
+      // Handle individual diagram responses format
+      if (isIndividualDiagramResponses(data)) {
+        // Transform individual responses to AIAnalysis format using new transformation
+        const aiAnalysis = transformWorkerResponseToAIAnalysis({ results: data });
+        displayContent(aiAnalysis);
+      } else if (data.aiResponse) {
+        // Fallback to old format
+        const transformedData = transformAIResponseToAIAnalysis(data.aiResponse);
+        displayContent(transformedData);
+      } else {
+        showError();
+      }
     } catch (error) {
       console.error("Error parsing AI response:", error);
       showError();
     }
   }
 
-  function transformAIResponse(aiResponse: any): AIAnalysis {
-    const result: AIAnalysis = {};
+  // Helper function to check if data is in individual diagram responses format
+  function isIndividualDiagramResponses(data: any): boolean {
+    if (typeof data !== 'object' || data === null) return false;
 
-    // Handle the case where the response has a 'text' property containing the array
-    const responseArray = aiResponse.text || aiResponse;
+    // Check if all top-level keys are diagram IDs and values have success/result structure
+    const diagramIds = ['erd', 'architecture', 'c4', 'user-stories', 'gantt', 'kanban'];
+    const keys = Object.keys(data);
 
-    if (Array.isArray(responseArray)) {
-      responseArray.forEach((item) => {
-        switch (item.type) {
-          case "erd":
-            result.erd = item.mermaid;
-            break;
-          case "architecture":
-            result.architecture = item.mermaid;
-            break;
-          case "c4":
-            result.c4 = item.mermaid;
-            break;
-          case "user-stories":
-            result.userStories = item.data;
-            break;
-          case "gantt":
-            result.gantt = item.mermaid;
-            break;
-          case "kanban":
-            result.kanban = item.mermaid;
-            break;
-        }
-      });
-    }
-
-    return result;
+    return keys.length > 0 && keys.every(key =>
+      diagramIds.includes(key) &&
+      typeof data[key] === 'object' &&
+      data[key] !== null &&
+      'success' in data[key]
+    );
   }
+
 
   function showError() {
     const loadingState = document.getElementById("loadingState");

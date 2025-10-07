@@ -1,0 +1,46 @@
+---
+import { diagrams } from "@/data/mockdata";
+
+interface Props {
+  selectedDiagrams?: string[];
+}
+
+const { selectedDiagrams = [] } = Astro.props;
+---
+
+<div class="flex flex-col gap-2">
+  <label class="text-white text-sm font-medium leading-normal">
+    Select Diagrams to Generate
+  </label>
+  <div class="flex flex-col gap-2 max-h-64 overflow-y-auto">
+    {
+      diagrams.map((diagram) => (
+        <label
+          for={`diagram-${diagram.id}`}
+          class="flex items-center gap-3 px-3 py-2 rounded-lg bg-[#101a23] hover:bg-[#223649] cursor-pointer transition-colors"
+        >
+          <input
+            type="checkbox"
+            id={`diagram-${diagram.id}`}
+            name="selectedDiagrams"
+            value={diagram.id}
+            checked={selectedDiagrams.includes(diagram.id)}
+            class="w-4 h-4 text-[#3ba7d1] bg-[#0c1520] border-[#223649] rounded focus:ring-[#3ba7d1] focus:ring-2"
+          />
+          <div class="text-white" data-icon={diagram.icon} data-size="20px" data-weight="fill">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="20px"
+              height="20px"
+              fill="currentColor"
+              viewBox="0 0 256 256"
+            >
+              <path d={diagram.path}></path>
+            </svg>
+          </div>
+          <p class="text-white text-sm font-medium leading-normal">{diagram.name}</p>
+        </label>
+      ))
+    }
+  </div>
+</div>

@@ -7,6 +7,7 @@ import { app } from "@/firebase/server";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
 import { FIRESTORE_COLLECTIONS } from "@/constants/firestore";
+import { transformAIResponseToAIAnalysis } from "@/utils/validation";
 import type { Project } from "@/types/Project";
 import type { UserStory } from "@/types/AIAnalysis";
 
@@ -102,40 +103,15 @@ const diagramTitles: Record<string, string> = {
 
 const diagramTitle = diagramTitles[diagram] || diagram;
 
-// Function to transform AI analysis from array format to flat object format
+// Function to transform AI analysis from various formats to flat object format
 function transformAIAnalysis(aiAnalysis: any): any {
-  const result: any = {};
-  console.log("aiAnalysis", aiAnalysis);
-  // Handle the case where the response has a 'text' property containing the array
-  const responseArray =
-    (aiAnalysis as any)?.aiResponse?.text || aiAnalysis.text || aiAnalysis;
-  console.log("responseArray", responseArray);
-  if (Array.isArray(responseArray)) {
-    responseArray.forEach((item) => {
-      switch (item.type) {
-        case "erd":
-          result.erd = item.mermaid;
-          break;
-        case "architecture":
-          result.architecture = item.mermaid;
-          break;
-        case "c4":
-          result.c4 = item.mermaid;
-          break;
-        case "user-stories":
-          result.userStories = item.data;
-          break;
-        case "gantt":
-          result.gantt = item.mermaid;
-          break;
-        case "kanban":
-          result.kanban = item.mermaid;
-          break;
-      }
-    });
+  // If aiAnalysis is already in the flat format (has erd, architecture, etc.), return as-is
+  if (aiAnalysis && typeof aiAnalysis === 'object' && (aiAnalysis.erd || aiAnalysis.architecture || aiAnalysis.c4 || aiAnalysis.userStories || aiAnalysis.gantt || aiAnalysis.kanban)) {
+    return aiAnalysis;
   }
 
-  return result;
+  // Otherwise, transform from the old nested format
+  return transformAIResponseToAIAnalysis(aiAnalysis);
 }
 ---
 
