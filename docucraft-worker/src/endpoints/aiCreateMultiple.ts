@@ -1,35 +1,16 @@
 import { Bool, OpenAPIRoute } from "chanfana";
 import { z } from "zod";
 import { AIRequest, AIResponse, AppContext } from "../types";
-import { GoogleGenAI } from "@google/genai";
 import { env } from "hono/adapter";
-import { prompt as erdPrompt } from "../../prompts/erd";
-import { prompt as architecturePrompt } from "../../prompts/architecture";
-import { prompt as c4Prompt } from "../../prompts/c4";
-import { prompt as userStoriesPrompt } from "../../prompts/user-stories";
-import { prompt as ganttPrompt } from "../../prompts/gantt";
-import { prompt as kanbanPrompt } from "../../prompts/kanban";
+import {
+  generateAIContent,
+  getPromptFormat,
+  isPromptKey,
+} from "../services/aiGenerationService";
+import { formatDiagramResponse } from "../services/aiResponseFormatter";
 
 type Env = {
   GOOGLE_AI_STUDIO_TOKEN: string;
-};
-
-const diagramPrompts = {
-  erd: erdPrompt,
-  architecture: architecturePrompt,
-  c4: c4Prompt,
-  "user-stories": userStoriesPrompt,
-  gantt: ganttPrompt,
-  kanban: kanbanPrompt,
-};
-
-const diagramFormats = {
-  erd: "mermaid",
-  architecture: "mermaid",
-  c4: "mermaid",
-  "user-stories": "json",
-  gantt: "mermaid",
-  kanban: "mermaid",
 };
 
 export class AiCreateMultiple extends OpenAPIRoute {
@@ -74,19 +55,12 @@ export class AiCreateMultiple extends OpenAPIRoute {
     const { GOOGLE_AI_STUDIO_TOKEN } = env(c) as Env;
     const selectedDiagrams = aiRequest.selectedDiagrams || [];
 
-    const ai = new GoogleGenAI({
-      apiKey: GOOGLE_AI_STUDIO_TOKEN,
-    });
-
     const results: Record<string, { success: boolean; result?: z.infer<typeof AIResponse>; error?: string; status: 'pending' | 'completed' | 'failed' }> = {};
 
     // Process diagrams sequentially
     for (const diagramId of selectedDiagrams) {
       try {
-        const prompt = diagramPrompts[diagramId as keyof typeof diagramPrompts];
-        const format = diagramFormats[diagramId as keyof typeof diagramFormats];
-
-        if (!prompt) {
+        if (!isPromptKey(diagramId)) {
           results[diagramId] = {
             success: false,
             error: `Unknown diagram type: ${diagramId}`,
@@ -95,54 +69,17 @@ export class AiCreateMultiple extends OpenAPIRoute {
           continue;
         }
 
-        const response = await ai.models.generateContent({
-          model: "gemini-2.5-flash-lite",
-          contents: `
-${prompt}
-
-${aiRequest.text}`,
-        });
-
-        let text = response.text;
-
-        // Clean the response based on format
-        if (format === "mermaid") {
-          if (text.includes("```mermaid") || text.includes("```")) {
-            text = text.replace(/```mermaid\s*/g, "").replace(/```\s*/g, "");
-            text = text.trim();
-          }
-        } else if (format === "json") {
-          // Clean JSON response similar to aiCreate.ts
-          if (text.includes("```json") || text.includes("```")) {
-            text = text.replace(/```json\s*/g, "").replace(/```\s*/g, "");
-            text = text.trim();
-          }
-
-          if (text.includes("\\n") || text.includes('\\"')) {
-            try {
-              const parsedText = JSON.parse(text);
-              text = JSON.stringify(parsedText);
-            } catch (error) {
-              text = text
-                .replace(/\\n/g, "\n")
-                .replace(/\\"/g, '"')
-                .replace(/\\\\/g, "\\");
-            }
-          }
-
-          try {
-            JSON.parse(text);
-          } catch (error) {
-            text = text
-              .replace(/\n/g, "\\n")
-              .replace(/"/g, '\\"')
-              .replace(/\\/g, "\\\\");
-          }
-        }
+        const format = getPromptFormat(diagramId);
+        const rawText = await generateAIContent(
+          diagramId,
+          aiRequest,
+          GOOGLE_AI_STUDIO_TOKEN,
+        );
+        const formatted = formatDiagramResponse(format, rawText);
 
         results[diagramId] = {
           success: true,
-          result: { text },
+          result: { text: formatted },
           status: 'completed',
         };
       } catch (error) {

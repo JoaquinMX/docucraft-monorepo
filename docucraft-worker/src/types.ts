@@ -12,3 +12,5 @@ export const AIRequest = z.object({
   text: Str(),
   selectedDiagrams: z.array(z.string()).optional(),
 });
+
+export type AIRequestPayload = z.infer<typeof AIRequest>;
