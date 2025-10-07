@@ -89,7 +89,9 @@ describe("createPaymentIntent", () => {
     });
 
     expect(result.ok).toBe(false);
-    if (result.ok) throw new Error("Expected error result");
+    if (!("error" in result)) {
+      throw new Error("Expected error result");
+    }
     expect(result.error.type).toBe("stripe-error");
     expect(result.error.message).toBe("Invalid amount");
   });
@@ -109,7 +111,9 @@ describe("createPaymentIntent", () => {
     });
 
     expect(result.ok).toBe(false);
-    if (result.ok) throw new Error("Expected error result");
+    if (!("error" in result)) {
+      throw new Error("Expected error result");
+    }
     expect(result.error.type).toBe("unexpected-response");
   });
 
@@ -121,7 +125,9 @@ describe("createPaymentIntent", () => {
     });
 
     expect(result.ok).toBe(false);
-    if (result.ok) throw new Error("Expected error result");
+    if (!("error" in result)) {
+      throw new Error("Expected error result");
+    }
     expect(result.error.type).toBe("missing-secret-key");
   });
 
@@ -136,7 +142,9 @@ describe("createPaymentIntent", () => {
     });
 
     expect(result.ok).toBe(false);
-    if (result.ok) throw new Error("Expected error result");
+    if (!("error" in result)) {
+      throw new Error("Expected error result");
+    }
     expect(result.error.type).toBe("network-error");
     expect(result.error.message).toBe("network down");
   });

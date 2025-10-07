@@ -84,13 +84,16 @@ export class CreatePaymentIntent extends OpenAPIRoute {
 }
 
 function mapServiceResultToResponse(result: CreatePaymentIntentResult): Response {
-  if (result.ok) {
+  if ("error" in result) {
+    const status = mapErrorTypeToStatus(result.error.type);
+
     return new Response(
       JSON.stringify({
-        success: true,
-        paymentIntent: result.paymentIntent,
+        success: false,
+        error: { message: result.error.message },
       }),
       {
+        status,
         headers: {
           "Content-Type": "application/json",
         },
@@ -98,15 +101,12 @@ function mapServiceResultToResponse(result: CreatePaymentIntentResult): Response
     );
   }
 
-  const status = mapErrorTypeToStatus(result.error.type);
-
   return new Response(
     JSON.stringify({
-      success: false,
-      error: { message: result.error.message },
+      success: true,
+      paymentIntent: result.paymentIntent,
     }),
     {
-      status,
       headers: {
         "Content-Type": "application/json",
       },
