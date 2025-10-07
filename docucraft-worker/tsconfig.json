@@ -19,11 +19,11 @@
 		"module": "es2022",
 		"noEmit": true,
 		"lib": ["es2022"],
-		"types": [
-			"./worker-configuration.d.ts",
-			"@types/node",
-			"@types/service-worker-mock"
-		]
+                "types": [
+                        "./worker-configuration.d.ts",
+                        "@types/node",
+                        "@types/service-worker-mock"
+                ]
 	},
 	"exclude": ["node_modules", "dist", "tests"],
 	"include": ["src", "worker-configuration.d.ts"]

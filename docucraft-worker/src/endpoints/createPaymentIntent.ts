@@ -2,16 +2,15 @@ import { Bool, OpenAPIRoute } from "chanfana";
 import { z } from "zod";
 import { env } from "hono/adapter";
 import type { AppContext } from "../types";
+import {
+  createPaymentIntent,
+  type CreatePaymentIntentError,
+  type CreatePaymentIntentResult,
+} from "../services/stripePaymentService";
 
 type Env = {
   STRIPE_SECRET_KEY: string;
 };
-
-const PaymentIntentResponseSchema = z.object({
-  id: z.string(),
-  client_secret: z.string().optional(),
-  status: z.string(),
-});
 
 const PaymentIntentRequestSchema = z.object({
   amount: z.number().positive().optional(),
@@ -40,7 +39,11 @@ export class CreatePaymentIntent extends OpenAPIRoute {
           "application/json": {
             schema: z.object({
               success: Bool(),
-              paymentIntent: PaymentIntentResponseSchema,
+              paymentIntent: z.object({
+                id: z.string(),
+                client_secret: z.string().optional(),
+                status: z.string(),
+              }),
             }),
           },
         },
@@ -68,85 +71,24 @@ export class CreatePaymentIntent extends OpenAPIRoute {
     const requestedAmount = requestBody.amount ?? 20;
     const currency = (requestBody.currency ?? "usd").toLowerCase();
 
-    const currencyExponent = getCurrencyExponent(currency);
-    const amountInMinorUnits = toMinorCurrencyUnit(
-      requestedAmount,
-      currencyExponent
-    );
-
     const { STRIPE_SECRET_KEY } = env(c) as Env;
 
-    if (!STRIPE_SECRET_KEY) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: { message: "Stripe secret key is not configured" },
-        }),
-        {
-          status: 500,
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-    }
-
-    const body = new URLSearchParams();
-    body.append("amount", amountInMinorUnits.toString());
-    body.append("currency", currency);
-    body.append("automatic_payment_methods[enabled]", "true");
-
-    const stripeResponse = await fetch("https://api.stripe.com/v1/payment_intents", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${STRIPE_SECRET_KEY}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body,
+    const result = await createPaymentIntent({
+      amount: requestedAmount,
+      currency,
+      stripeSecretKey: STRIPE_SECRET_KEY,
     });
 
-    const stripeData = await stripeResponse.json<unknown>();
+    return mapServiceResultToResponse(result);
+  }
+}
 
-    if (!stripeResponse.ok) {
-      const errorMessage =
-        (stripeData as { error?: { message?: string } })?.error?.message ??
-        "Failed to create payment intent";
-
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: { message: errorMessage },
-        }),
-        {
-          status: 400,
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-    }
-
-    const parsedStripeData = PaymentIntentResponseSchema.safeParse(stripeData);
-
-    if (!parsedStripeData.success) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: { message: "Unexpected Stripe response structure" },
-        }),
-        {
-          status: 400,
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-    }
-
+function mapServiceResultToResponse(result: CreatePaymentIntentResult): Response {
+  if (result.ok) {
     return new Response(
       JSON.stringify({
         success: true,
-        paymentIntent: parsedStripeData.data,
+        paymentIntent: result.paymentIntent,
       }),
       {
         headers: {
@@ -155,48 +97,34 @@ export class CreatePaymentIntent extends OpenAPIRoute {
       }
     );
   }
+
+  const status = mapErrorTypeToStatus(result.error.type);
+
+  return new Response(
+    JSON.stringify({
+      success: false,
+      error: { message: result.error.message },
+    }),
+    {
+      status,
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
 }
 
-const ZERO_DECIMAL_CURRENCIES = new Set([
-  "bif",
-  "clp",
-  "djf",
-  "gnf",
-  "jpy",
-  "kmf",
-  "krw",
-  "mga",
-  "pyg",
-  "rwf",
-  "ugx",
-  "vnd",
-  "vuv",
-  "xaf",
-  "xof",
-  "xpf",
-]);
-
-const THREE_DECIMAL_CURRENCIES = new Set([
-  "bhd",
-  "jod",
-  "kwd",
-  "omr",
-  "tnd",
-]);
-
-function getCurrencyExponent(currency: string): number {
-  if (THREE_DECIMAL_CURRENCIES.has(currency)) {
-    return 3;
+function mapErrorTypeToStatus(
+  type: CreatePaymentIntentError["error"]["type"]
+): number {
+  switch (type) {
+    case "missing-secret-key":
+      return 500;
+    case "network-error":
+      return 502;
+    case "stripe-error":
+    case "unexpected-response":
+    default:
+      return 400;
   }
-
-  if (ZERO_DECIMAL_CURRENCIES.has(currency)) {
-    return 0;
-  }
-
-  return 2;
-}
-
-function toMinorCurrencyUnit(amount: number, exponent: number): number {
-  const multiplier = 10 ** exponent;
-  return Math.round(amount * multiplier);
 }
