@@ -10,11 +10,22 @@ import { FIRESTORE_COLLECTIONS } from "@/constants/firestore";
 import { transformAIResponseToAIAnalysis } from "@/utils/validation";
 import type { Project } from "@/types/Project";
 import type { UserStory } from "@/types/AIAnalysis";
+import {
+  DIAGRAM_CONFIG,
+  type DiagramId,
+  isValidDiagramId,
+} from "@/utils/aiAnalysis";
 
 const auth = getAuth(app);
 const db = getFirestore(app);
 const id = Astro.params.id as string;
-const diagram = Astro.params.diagram as string;
+const diagramParam = Astro.params.diagram as string;
+
+if (!isValidDiagramId(diagramParam)) {
+  return Astro.redirect("/404");
+}
+
+const diagram = diagramParam as DiagramId;
 
 // Get current user
 if (!Astro.cookies.has("__session")) {
@@ -33,6 +44,7 @@ let project: Project | null = null;
 let error: string | null = null;
 let diagramContent: string | null = null;
 let userStories: UserStory[] | null = null;
+let diagramStatus: "pending" | "completed" | "failed" | null = null;
 
 try {
   const docRef = db
@@ -44,18 +56,10 @@ try {
 
   if (docSnap.exists) {
     project = { id: docSnap.id, ...docSnap.data() } as Project;
-    console.log("project", project);
-    console.log(
-      "project.aiAnalysis",
-      (project.aiAnalysis as any)?.aiResponse?.text
-    );
-    console.log((project.aiAnalysis as any)?.gantt, diagram);
     // Get the appropriate diagram content based on the diagram type
     if (project.aiAnalysis) {
       // Transform the AI analysis from array format to flat object format
       const transformedAnalysis = transformAIAnalysis(project.aiAnalysis);
-      console.log("transformedAnalysis", transformedAnalysis);
-
       switch (diagram) {
         case "erd":
           diagramContent = transformedAnalysis.erd || null;
@@ -78,6 +82,22 @@ try {
         default:
           error = "Diagram type not found";
       }
+
+      const statusField = DIAGRAM_CONFIG[diagram].statusField;
+      const fieldKey = DIAGRAM_CONFIG[diagram].field;
+      const rawStatus = transformedAnalysis?.[statusField];
+
+      if (rawStatus === "pending" || rawStatus === "completed" || rawStatus === "failed") {
+        diagramStatus = rawStatus;
+      } else {
+        const hasData =
+          diagram === "user-stories"
+            ? Array.isArray(userStories) && userStories.length > 0
+            : Boolean(transformedAnalysis?.[fieldKey]);
+        if (hasData) {
+          diagramStatus = "completed";
+        }
+      }
     } else {
       error = "No AI analysis available for this project";
     }
@@ -92,16 +112,24 @@ if (!project && !error) {
 }
 
 // Format diagram title
-const diagramTitles: Record<string, string> = {
-  erd: "Entity Relationship Diagram",
-  architecture: "Architecture Diagram",
-  c4: "C4 Context Diagram",
-  "user-stories": "User Stories",
-  gantt: "Gantt Chart",
-  kanban: "Kanban Board",
+const diagramDescriptions: Record<DiagramId, string> = {
+  erd: "View the database schema",
+  architecture: "View the system design",
+  c4: "View the context diagram",
+  "user-stories": "View user stories and requirements",
+  gantt: "View the project timeline",
+  kanban: "View the development workflow",
 };
 
-const diagramTitle = diagramTitles[diagram] || diagram;
+const statusClasses: Record<string, string> = {
+  pending: "bg-yellow-500/10 text-yellow-300 border border-yellow-500/40",
+  completed:
+    "bg-emerald-500/10 text-emerald-300 border border-emerald-500/40",
+  failed: "bg-red-500/10 text-red-300 border border-red-500/40",
+};
+
+const diagramConfig = DIAGRAM_CONFIG[diagram];
+const diagramTitle = diagramConfig.label;
 
 // Function to transform AI analysis from various formats to flat object format
 function transformAIAnalysis(aiAnalysis: any): any {
@@ -120,11 +148,37 @@ function transformAIAnalysis(aiAnalysis: any): any {
     <div class="gap-1 px-6 flex flex-1 justify-center py-5">
       <ProjectSidebar projectId={id} />
       <div class="layout-content-container flex flex-col max-w-[960px] flex-1">
-        <div class="flex flex-wrap justify-between gap-3 p-4">
-          <p
-            class="text-white tracking-light text-[32px] font-bold leading-tight min-w-72"
+        <div class="flex flex-wrap items-center justify-between gap-3 p-4">
+          <div class="flex flex-wrap items-center gap-3">
+            <p
+              class="text-white tracking-light text-[32px] font-bold leading-tight"
+            >
+              {diagramTitle}
+            </p>
+            {diagramStatus && (
+              <span
+                class={`text-sm font-medium px-3 py-1 rounded-full border ${
+                  statusClasses[diagramStatus] || statusClasses.pending
+                }`}
+              >
+                {diagramStatus.charAt(0).toUpperCase() +
+                  diagramStatus.slice(1)}
+              </span>
+            )}
+          </div>
+          <button
+            type="button"
+            class="regenerate-button inline-flex items-center justify-center rounded-md bg-[#3ba7d1] px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-[#2e85a8] disabled:opacity-50 disabled:cursor-not-allowed"
+            data-project-id={project?.id}
+            data-diagram-id={diagram}
           >
-            {diagramTitle}
+            Regenerate
+          </button>
+        </div>
+
+        <div class="px-4 pb-4">
+          <p class="text-[#9ca3af] text-sm">
+            {diagramDescriptions[diagram]}
           </p>
         </div>
 
@@ -164,11 +218,11 @@ function transformAIAnalysis(aiAnalysis: any): any {
           !diagramContent && !userStories && !error && (
             <div class="px-4 pb-6">
               <div class="bg-gray-800/50 p-8 rounded-lg text-center">
-                <p class="text-gray-400 text-lg">
-                  No diagram content available
-                </p>
+                <p class="text-gray-400 text-lg">No diagram content available</p>
                 <p class="text-gray-500 text-sm mt-2">
-                  This diagram hasn't been generated yet
+                  {diagramStatus === "failed"
+                    ? "The last generation attempt failed. Try regenerating to refresh this artifact."
+                    : "This diagram hasn't been generated yet."}
                 </p>
               </div>
             </div>
@@ -197,6 +251,54 @@ function transformAIAnalysis(aiAnalysis: any): any {
       mermaid.run();
     }
 
-    document.addEventListener("astro:page-load", handleMermaid);
+    document.addEventListener("astro:page-load", () => {
+      handleMermaid();
+
+      const regenerateButton = document.querySelector<HTMLButtonElement>(
+        ".regenerate-button"
+      );
+
+      regenerateButton?.addEventListener("click", async () => {
+        if (!regenerateButton.dataset.projectId || !regenerateButton.dataset.diagramId) {
+          console.warn("Missing project or diagram identifier for regeneration");
+          return;
+        }
+
+        const originalText = regenerateButton.textContent;
+        regenerateButton.disabled = true;
+        regenerateButton.textContent = "Regenerating...";
+
+        try {
+          const response = await fetch(
+            `/api/projects/${regenerateButton.dataset.projectId}/ai-analysis/regenerate/${regenerateButton.dataset.diagramId}`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+            }
+          );
+
+          if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
+            throw new Error(
+              (data as { error?: string }).error ||
+                "Failed to regenerate diagram"
+            );
+          }
+
+          window.location.reload();
+        } catch (error) {
+          console.error("Failed to regenerate diagram:", error);
+          alert(
+            error instanceof Error
+              ? error.message
+              : "Failed to regenerate diagram"
+          );
+          regenerateButton.disabled = false;
+          regenerateButton.textContent = originalText ?? "Regenerate";
+        }
+      });
+    });
   </script>
 </MainLayout>

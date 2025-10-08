@@ -1,4 +1,5 @@
 import type { AIAnalysis, UserStory } from "@/types/AIAnalysis";
+import { DIAGRAM_CONFIG, isValidDiagramId } from "@/utils/aiAnalysis";
 
 /**
  * Transforms AI response array format to flat AIAnalysis object format
@@ -72,44 +73,6 @@ export function transformAIResponseToAIAnalysis(aiResponse: any): AIAnalysis {
 /**
  * Transforms worker response format to AIAnalysis object format
  * Handles the new format with status information
- */
-export function transformWorkerResponseToAIAnalysis(workerResponse: any): AIAnalysis {
-  const result: AIAnalysis = {};
-
-  if (workerResponse?.results) {
-    // Handle the new worker response format with results and status
-    Object.entries(workerResponse.results).forEach(([diagramId, response]: [string, any]) => {
-      const status = response.status;
-      const diagramKey = diagramId as keyof AIAnalysis;
-      const statusKey = `${diagramId}Status` as keyof AIAnalysis;
-
-      if (response.success && response.result) {
-        if (diagramId === 'user-stories') {
-          // Parse JSON for user stories
-          try {
-            const parsed = JSON.parse(response.result.text);
-            if (Array.isArray(parsed)) {
-              result.userStories = parsed;
-            }
-          } catch (e) {
-            console.warn('Failed to parse user stories:', e);
-          }
-        } else {
-          result[diagramKey] = response.result.text;
-        }
-      }
-
-      // Set status
-      if (status) {
-        result[statusKey] = status;
-      }
-    });
-  }
-
-  return result;
-}
-
-/**
  * Validates AI analysis data structure
  */
 export function validateAIAnalysis(aiAnalysis: unknown): aiAnalysis is AIAnalysis {
@@ -153,6 +116,51 @@ export function validateAIAnalysis(aiAnalysis: unknown): aiAnalysis is AIAnalysi
 }
 
 /**
+ * Validates a partial AI analysis payload
+ */
+export function validatePartialAIAnalysis(
+  aiAnalysis: unknown
+): aiAnalysis is Partial<AIAnalysis> {
+  if (!aiAnalysis || typeof aiAnalysis !== "object") {
+    return false;
+  }
+
+  const candidate = aiAnalysis as Record<string, unknown>;
+  const diagramFields = new Set(
+    Object.values(DIAGRAM_CONFIG).map((config) => config.field as string)
+  );
+  const statusFields = new Set(
+    Object.values(DIAGRAM_CONFIG).map((config) => config.statusField as string)
+  );
+
+  return Object.entries(candidate).every(([key, value]) => {
+    if (!diagramFields.has(key) && !statusFields.has(key)) {
+      return false;
+    }
+
+    if (statusFields.has(key)) {
+      return (
+        value === "pending" || value === "completed" || value === "failed"
+      );
+    }
+
+    if (key === "userStories") {
+      if (!Array.isArray(value)) {
+        return false;
+      }
+
+      return value.every((story) => validateUserStory(story));
+    }
+
+    if (typeof value !== "string") {
+      return false;
+    }
+
+    return value.trim().length > 0;
+  });
+}
+
+/**
  * Validates user story structure
  */
 export function validateUserStory(story: unknown): story is UserStory {
@@ -193,6 +201,7 @@ export function validateProjectData(data: unknown): data is {
   keyObjectives: string;
   image?: unknown;
   aiAnalysis?: AIAnalysis;
+  selectedDiagrams?: string[];
 } {
   if (!data || typeof data !== "object") {
     return false;
@@ -223,6 +232,18 @@ export function validateProjectData(data: unknown): data is {
     !validateAIAnalysis(candidate.aiAnalysis)
   ) {
     return false;
+  }
+
+  if (candidate.selectedDiagrams !== undefined) {
+    if (!Array.isArray(candidate.selectedDiagrams)) {
+      return false;
+    }
+
+    if (
+      !candidate.selectedDiagrams.every((diagram) => isValidDiagramId(diagram))
+    ) {
+      return false;
+    }
   }
 
   return true;
