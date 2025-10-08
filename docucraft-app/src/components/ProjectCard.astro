@@ -5,7 +5,13 @@ import { resolveProjectImageSrc } from "@/utils/project";
 const { project: Project, href } = Astro.props;
 ---
 
-<a href={href} class="flex flex-col gap-3 pb-3">
+<a
+  href={href}
+  class="flex flex-col gap-3 pb-3"
+  data-project-card
+  data-project-name={Project.name}
+  data-project-description={Project.description}
+>
   <Image
     class="w-full bg-center bg-no-repeat aspect-square bg-cover rounded-lg"
     src={resolveProjectImageSrc(Project.image)}
