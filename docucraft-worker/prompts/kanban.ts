@@ -60,5 +60,7 @@ task5[Project Setup] @{priority: "Medium", assigned: "Dev Team"}
 
 **FINAL REMINDER:** Your response must be ONLY the Mermaid kanban board code. No markdown, no code blocks, no backticks, no explanations. Just the raw Mermaid code.
 
+Use the project context appended below (project details, selected template metadata, follow-up answers, and requested diagrams) to align task swimlanes, ownership, and compliance gates. Mirror the operational phases emphasized in that context.
+
 ---
 `;

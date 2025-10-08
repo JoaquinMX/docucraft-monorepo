@@ -54,5 +54,7 @@ graph TB
 
 **FINAL REMINDER:** Your response must be ONLY the Mermaid architecture diagram code. No markdown, no code blocks, no backticks, no explanations. Just the raw Mermaid code.
 
+Use the project context appended below (project details, selected template metadata, follow-up answers, and requested diagrams) to tailor the system design. Reflect regulatory and operational nuances from that context in the architecture.
+
 ---
 `;

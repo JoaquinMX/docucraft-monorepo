@@ -267,5 +267,7 @@ task5[Project Setup] @{priority: "Medium", assigned: "Dev Team"}
 
 **FINAL REMINDER:** Your response must be ONLY the JSON array. No markdown, no code blocks, no backticks, no explanations. Just the raw JSON that can be directly parsed with JSON.parse().
 
+Use the project context appended below (project details, selected template metadata, follow-up answers, and requested diagrams) to tailor your reasoning. Align deliverables with the regulatory and technical constraints surfaced in that context.
+
 ---
 `;

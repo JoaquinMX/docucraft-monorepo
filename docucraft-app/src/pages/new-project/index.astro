@@ -2,6 +2,9 @@
 import MainLayout from "@layouts/MainLayout.astro";
 import ImageSelector from "@/components/ImageSelector.astro";
 import DiagramSelector from "@/components/DiagramSelector.astro";
+import { projectTemplates } from "@/data/projectTemplates";
+
+const templatesJson = JSON.stringify(projectTemplates);
 import { app } from "../../firebase/server";
 import { getAuth } from "firebase-admin/auth";
 
@@ -65,78 +68,294 @@ if (Astro.cookies.has("__session")) {
         )
       }
 
-      <form id="projectForm" class="flex flex-col gap-4 px-4" novalidate>
-        <div class="flex flex-col gap-2">
-          <label
-            for="projectName"
-            class="text-white text-sm font-medium leading-normal"
-          >
-            Project Name
-          </label>
-          <input
-            type="text"
-            name="projectName"
-            id="projectName"
-            class="flex h-12 w-full resize-none overflow-hidden rounded-lg border border-[#223649] bg-[#0c1520] px-4 text-white placeholder:text-[#94a3b3] focus:border-[#3ba7d1] focus:outline-none text-sm"
-            placeholder="Enter your project name"
-            required
-          />
+      <form id="projectForm" class="flex flex-col gap-5 px-4" novalidate>
+        <div class="flex flex-col items-center gap-1 text-center">
+          <p id="stepCounter" class="text-[#94a3b3] text-xs uppercase tracking-[0.2em]">
+            Step 1 of 3 · Choose a template
+          </p>
+          <p class="text-white text-lg font-semibold">Project creation wizard</p>
         </div>
 
-        <div class="flex flex-col gap-2">
-          <label
-            for="projectDescription"
-            class="text-white text-sm font-medium leading-normal"
-          >
-            Project Description
-          </label>
-          <textarea
-            name="projectDescription"
-            id="projectDescription"
-            rows="4"
-            class="flex w-full resize-none overflow-hidden rounded-lg border border-[#223649] bg-[#0c1520] px-4 py-3 text-white placeholder:text-[#94a3b3] focus:border-[#3ba7d1] focus:outline-none text-sm"
-            placeholder="Describe your project in detail..."
-            required></textarea>
+        <div id="stepError" class="hidden rounded-lg border border-red-500/40 bg-red-900/20 px-4 py-3">
+          <p class="text-red-300 text-sm"></p>
         </div>
 
-        <div class="flex flex-col gap-2">
-          <label
-            for="keyObjectives"
-            class="text-white text-sm font-medium leading-normal"
-          >
-            Key Objectives
-          </label>
-          <textarea
-            name="keyObjectives"
-            id="keyObjectives"
-            rows="3"
-            class="flex w-full resize-none overflow-hidden rounded-lg border border-[#223649] bg-[#0c1520] px-4 py-3 text-white placeholder:text-[#94a3b3] focus:border-[#3ba7d1] focus:outline-none text-sm"
-            placeholder="What are the main goals of this project?"
-            required></textarea>
-        </div>
-
-        <ImageSelector name="projectImage" selectedImage="alpha" />
-
-        <DiagramSelector />
-
-        <button
-          type="submit"
-          id="submitButton"
-          class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-6 bg-[#3ba7d1] text-white text-sm font-medium leading-normal hover:bg-[#2e85a8] transition-colors mt-2"
+        <div
+          data-step
+          data-step-label="Choose a template"
+          class="flex flex-col gap-4"
         >
-          <span id="buttonText">Create Project</span>
-          <div
-            id="loadingSpinner"
-            class="hidden animate-spin rounded-full h-4 w-4 border-b-2 border-white ml-2"
-          >
-          </div>
-        </button>
+          <p class="text-[#94a3b3] text-sm text-center">
+            Select the project template that best matches your vertical. We will
+            tailor the follow-up questions and AI prompts based on your choice.
+          </p>
 
-        <div id="progressContainer" class="hidden mt-4 space-y-2">
-          <p class="text-white text-sm font-medium">Generating diagrams...</p>
-          <div id="progressItems" class="space-y-1">
-            <!-- Progress items will be added here dynamically -->
+          <div class="flex flex-col gap-3">
+            {projectTemplates.map((template) => (
+              <label class="flex cursor-pointer flex-col gap-3">
+                <input
+                  type="radio"
+                  name="templateId"
+                  value={template.id}
+                  class="peer sr-only"
+                  data-template-radio
+                  required
+                />
+                <div
+                  class="flex flex-col gap-2 rounded-lg border border-[#223649] bg-[#0c1520] p-4 transition hover:border-[#2e4257] hover:bg-[#101c2a] peer-checked:border-[#3ba7d1] peer-checked:bg-[#132033]"
+                >
+                  <div class="flex items-start justify-between gap-3">
+                    <div class="flex flex-col gap-1">
+                      <span class="text-[#3ba7d1] text-xs font-semibold uppercase tracking-wide">
+                        {template.vertical}
+                      </span>
+                      <span class="text-white text-base font-semibold leading-tight">
+                        {template.name}
+                      </span>
+                    </div>
+                  </div>
+                  <p class="text-[#c7d2df] text-sm leading-relaxed">
+                    {template.summary}
+                  </p>
+                  <div class="flex flex-col gap-2">
+                    <span class="text-[#94a3b3] text-xs font-semibold uppercase tracking-wide">
+                      Recommended stack
+                    </span>
+                    <div class="flex flex-wrap gap-2">
+                      {template.recommendedStack.map((item) => (
+                        <span
+                          class="rounded-full border border-[#223649] bg-[#121f2d] px-3 py-1 text-xs font-medium text-[#e5ecf5]"
+                        >
+                          {item}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </label>
+            ))}
           </div>
+        </div>
+
+        <div
+          data-step
+          data-step-label="Add contextual details"
+          class="hidden flex-col gap-4"
+        >
+          <p class="text-[#94a3b3] text-sm text-center">
+            Provide additional context so we can ground the AI generated assets
+            in your operating model, compliance posture, and launch priorities.
+          </p>
+
+          <div
+            id="questionsPlaceholder"
+            class="rounded-lg border border-dashed border-[#223649] bg-[#0c1520] px-4 py-6 text-center text-[#94a3b3]"
+          >
+            Select a template to view the contextual questions.
+          </div>
+
+          {projectTemplates.map((template) => (
+            <div
+              data-template-questions={template.id}
+              class="hidden flex flex-col gap-5 rounded-lg border border-[#223649] bg-[#0c1520] px-4 py-5"
+            >
+              <div class="flex flex-col gap-1">
+                <span class="text-[#3ba7d1] text-xs font-semibold uppercase tracking-wide">
+                  {template.vertical}
+                </span>
+                <span class="text-white text-base font-semibold leading-tight">
+                  {template.name}
+                </span>
+                <p class="text-[#c7d2df] text-sm leading-relaxed">
+                  {template.summary}
+                </p>
+                <div class="flex flex-wrap gap-2 pt-2">
+                  {template.recommendedStack.map((item) => (
+                    <span
+                      class="rounded-full border border-[#223649] bg-[#121f2d] px-3 py-1 text-xs font-medium text-[#e5ecf5]"
+                    >
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div class="flex flex-col gap-4">
+                {template.followUpQuestions.map((question) => {
+                  const inputId = `${template.id}-${question.id}`;
+                  return (
+                    <div
+                      data-question-id={question.id}
+                      data-question-type={question.type}
+                      data-question-prompt={question.prompt}
+                      class="flex flex-col gap-2"
+                    >
+                      <label
+                        for={inputId}
+                        class="text-white text-sm font-medium leading-normal"
+                      >
+                        {question.prompt}
+                      </label>
+                      {question.helperText && (
+                        <p class="text-[#94a3b3] text-xs leading-relaxed">
+                          {question.helperText}
+                        </p>
+                      )}
+                      {question.type === "text" && (
+                        <input
+                          id={inputId}
+                          name={inputId}
+                          type="text"
+                          data-question-input={question.id}
+                          class="flex h-11 w-full rounded-lg border border-[#223649] bg-[#101c2a] px-4 text-sm text-white placeholder:text-[#94a3b3] focus:border-[#3ba7d1] focus:outline-none"
+                          placeholder="Enter a short response"
+                        />
+                      )}
+                      {question.type === "textarea" && (
+                        <textarea
+                          id={inputId}
+                          name={inputId}
+                          rows="3"
+                          data-question-input={question.id}
+                          class="flex w-full rounded-lg border border-[#223649] bg-[#101c2a] px-4 py-3 text-sm text-white placeholder:text-[#94a3b3] focus:border-[#3ba7d1] focus:outline-none"
+                          placeholder="Share the key considerations"
+                        ></textarea>
+                      )}
+                      {question.type === "select" && (
+                        <select
+                          id={inputId}
+                          name={inputId}
+                          data-question-input={question.id}
+                          class="flex h-11 w-full rounded-lg border border-[#223649] bg-[#101c2a] px-4 text-sm text-white focus:border-[#3ba7d1] focus:outline-none"
+                        >
+                          <option value="">Select an option</option>
+                          {question.options?.map((option) => (
+                            <option value={option.label}>{option.label}</option>
+                          ))}
+                        </select>
+                      )}
+                      {question.type === "multi-select" && (
+                        <div class="flex flex-col gap-2">
+                          {question.options?.map((option) => {
+                            const optionId = `${inputId}-${option.id}`;
+                            return (
+                              <label
+                                for={optionId}
+                                class="flex items-center gap-2 rounded-lg border border-[#223649] bg-[#101c2a] px-3 py-2 text-sm text-[#e5ecf5] hover:border-[#2e4257]"
+                              >
+                                <input
+                                  id={optionId}
+                                  type="checkbox"
+                                  value={option.label}
+                                  data-question-input={question.id}
+                                  class="h-4 w-4 rounded border-[#223649] bg-[#0c1520] text-[#3ba7d1] focus:ring-[#3ba7d1]"
+                                />
+                                <span>{option.label}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div
+          data-step
+          data-step-label="Finalize project details"
+          class="hidden flex-col gap-4"
+        >
+          <div class="flex flex-col gap-2">
+            <label
+              for="projectName"
+              class="text-white text-sm font-medium leading-normal"
+            >
+              Project Name
+            </label>
+            <input
+              type="text"
+              name="projectName"
+              id="projectName"
+              class="flex h-12 w-full resize-none overflow-hidden rounded-lg border border-[#223649] bg-[#0c1520] px-4 text-white placeholder:text-[#94a3b3] focus:border-[#3ba7d1] focus:outline-none text-sm"
+              placeholder="Enter your project name"
+              required
+            />
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <label
+              for="projectDescription"
+              class="text-white text-sm font-medium leading-normal"
+            >
+              Project Description
+            </label>
+            <textarea
+              name="projectDescription"
+              id="projectDescription"
+              rows="4"
+              class="flex w-full resize-none overflow-hidden rounded-lg border border-[#223649] bg-[#0c1520] px-4 py-3 text-white placeholder:text-[#94a3b3] focus:border-[#3ba7d1] focus:outline-none text-sm"
+              placeholder="Describe your project in detail..."
+              required></textarea>
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <label
+              for="keyObjectives"
+              class="text-white text-sm font-medium leading-normal"
+            >
+              Key Objectives
+            </label>
+            <textarea
+              name="keyObjectives"
+              id="keyObjectives"
+              rows="3"
+              class="flex w-full resize-none overflow-hidden rounded-lg border border-[#223649] bg-[#0c1520] px-4 py-3 text-white placeholder:text-[#94a3b3] focus:border-[#3ba7d1] focus:outline-none text-sm"
+              placeholder="What are the main goals of this project?"
+              required></textarea>
+          </div>
+
+          <ImageSelector name="projectImage" selectedImage="alpha" />
+
+          <DiagramSelector />
+        </div>
+
+        <div class="flex items-center justify-between pt-2">
+          <button
+            type="button"
+            id="backButton"
+            class="hidden h-11 rounded-lg border border-[#223649] px-4 text-sm font-medium text-[#e5ecf5] transition hover:border-[#2e4257] hover:bg-[#101c2a]"
+          >
+            Back
+          </button>
+          <div class="flex items-center gap-3">
+            <button
+              type="button"
+              id="nextButton"
+              class="h-11 rounded-lg bg-[#223649] px-6 text-sm font-medium text-[#e5ecf5] transition hover:bg-[#2e4257]"
+            >
+              Next
+            </button>
+            <button
+              type="submit"
+              id="submitButton"
+              class="hidden flex h-11 min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg bg-[#3ba7d1] px-6 text-sm font-medium leading-normal text-white transition-colors hover:bg-[#2e85a8]"
+            >
+              <span id="buttonText">Create Project</span>
+              <div
+                id="loadingSpinner"
+                class="hidden ml-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white"
+              ></div>
+            </button>
+          </div>
+        </div>
+
+        <div id="progressContainer" class="hidden space-y-2">
+          <p class="text-white text-sm font-medium">Generating diagrams...</p>
+          <div id="progressItems" class="space-y-1"></div>
         </div>
       </form>
 
@@ -150,67 +369,455 @@ if (Astro.cookies.has("__session")) {
   </div>
 </MainLayout>
 
+<script type="application/json" id="projectTemplatesData">
+  {templatesJson}
+</script>
+
 <script>
   import { transformWorkerResponseToAIAnalysis } from "@/utils/validation";
+
+  type TemplateAnswer = {
+    questionId: string;
+    question: string;
+    type: string;
+    response: string | string[];
+  };
+
+  type TemplateMetadata = {
+    id: string;
+    name: string;
+    verticalId?: string;
+    vertical: string;
+    summary: string;
+    recommendedStack: string[];
+    followUpQuestions?: Array<{ id: string; prompt: string; type: string }>;
+  };
 
   // Use astro:page-load to ensure this runs on every page navigation
   document.addEventListener("astro:page-load", () => {
     const workerUrl = import.meta.env.PUBLIC_WORKER_URL;
-    const form = document.getElementById("projectForm") as HTMLFormElement;
+    const form = document.getElementById("projectForm") as HTMLFormElement | null;
     const submitButton = document.getElementById(
-      "submitButton"
-    ) as HTMLButtonElement;
-    const buttonText = document.getElementById("buttonText") as HTMLSpanElement;
+      "submitButton",
+    ) as HTMLButtonElement | null;
+    const buttonText = document.getElementById(
+      "buttonText",
+    ) as HTMLSpanElement | null;
     const loadingSpinner = document.getElementById(
-      "loadingSpinner"
-    ) as HTMLDivElement;
+      "loadingSpinner",
+    ) as HTMLDivElement | null;
     const errorMessage = document.getElementById(
-      "errorMessage"
-    ) as HTMLDivElement;
+      "errorMessage",
+    ) as HTMLDivElement | null;
     const progressContainer = document.getElementById(
-      "progressContainer"
-    ) as HTMLDivElement;
+      "progressContainer",
+    ) as HTMLDivElement | null;
     const progressItems = document.getElementById(
-      "progressItems"
-    ) as HTMLDivElement;
+      "progressItems",
+    ) as HTMLDivElement | null;
+    const nextButton = document.getElementById("nextButton") as
+      | HTMLButtonElement
+      | null;
+    const backButton = document.getElementById("backButton") as
+      | HTMLButtonElement
+      | null;
+    const stepCounter = document.getElementById("stepCounter") as
+      | HTMLParagraphElement
+      | null;
+    const stepError = document.getElementById("stepError") as HTMLDivElement | null;
+    const stepErrorText = stepError?.querySelector("p") as HTMLParagraphElement | null;
+    const templateRadios = document.querySelectorAll<HTMLInputElement>(
+      "input[data-template-radio]",
+    );
+    const templateSections = document.querySelectorAll<HTMLElement>(
+      "[data-template-questions]",
+    );
+    const questionsPlaceholder = document.getElementById(
+      "questionsPlaceholder",
+    ) as HTMLDivElement | null;
+    const templatesElement = document.getElementById(
+      "projectTemplatesData",
+    );
 
     if (
       !form ||
       !submitButton ||
       !buttonText ||
       !loadingSpinner ||
-      !errorMessage
+      !errorMessage ||
+      !progressContainer ||
+      !progressItems
     ) {
       console.error("Required form elements not found");
       return;
     }
 
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
+    const errorMessageText = errorMessage.querySelector("p") as
+      | HTMLParagraphElement
+      | null;
+    if (!errorMessageText) {
+      console.error("Error message container is missing a paragraph element");
+      return;
+    }
 
-      // Reset error message
+    let templates: TemplateMetadata[] = [];
+    try {
+      templates = templatesElement
+        ? JSON.parse(templatesElement.textContent ?? "[]")
+        : [];
+    } catch (error) {
+      console.error("Failed to parse template metadata", error);
+    }
+
+    const steps = Array.from(
+      document.querySelectorAll<HTMLElement>("[data-step]"),
+    );
+    const totalSteps = steps.length;
+    let currentStepIndex = 0;
+
+    const stepLabels = steps.map(
+      (step, index) => step.dataset.stepLabel ?? `Step ${index + 1}`,
+    );
+
+    function clearStepError() {
+      if (stepError) {
+        stepError.classList.add("hidden");
+      }
+      if (stepErrorText) {
+        stepErrorText.textContent = "";
+      }
+    }
+
+    function showStepError(message: string) {
+      if (!stepError) {
+        return;
+      }
+      if (stepErrorText) {
+        stepErrorText.textContent = message;
+      }
+      stepError.classList.remove("hidden");
+    }
+
+    function getSelectedTemplateId(): string | null {
+      const selected = Array.from(templateRadios).find((radio) => radio.checked);
+      return selected?.value ?? null;
+    }
+
+    function toggleNavigationDisabled(disabled: boolean) {
+      if (nextButton) {
+        nextButton.disabled = disabled;
+        nextButton.classList.toggle("opacity-60", disabled);
+        nextButton.classList.toggle("cursor-not-allowed", disabled);
+      }
+      if (backButton && !backButton.classList.contains("hidden")) {
+        backButton.disabled = disabled;
+        backButton.classList.toggle("opacity-60", disabled);
+        backButton.classList.toggle("cursor-not-allowed", disabled);
+      }
+    }
+
+    function showStep(index: number) {
+      steps.forEach((step, stepIndex) => {
+        step.classList.toggle("hidden", stepIndex !== index);
+      });
+
+      if (backButton) {
+        const isFirstStep = index === 0;
+        backButton.classList.toggle("hidden", isFirstStep);
+        backButton.disabled = isFirstStep;
+        backButton.classList.toggle("opacity-60", isFirstStep);
+        backButton.classList.toggle("cursor-not-allowed", isFirstStep);
+      }
+
+      if (nextButton) {
+        const isLastStep = index === totalSteps - 1;
+        nextButton.classList.toggle("hidden", isLastStep);
+        nextButton.disabled = isLastStep;
+        nextButton.classList.toggle("opacity-60", isLastStep);
+      }
+
+      submitButton.classList.toggle("hidden", index !== totalSteps - 1);
+
+      if (stepCounter) {
+        stepCounter.textContent = `Step ${index + 1} of ${totalSteps} · ${stepLabels[index]}`;
+      }
+
+      toggleNavigationDisabled(false);
+      clearStepError();
+    }
+
+    function updateTemplateSections(resetResponses: boolean = false) {
+      const selectedId = getSelectedTemplateId();
+      let hasMatch = false;
+
+      templateSections.forEach((section) => {
+        const matches = section.dataset.templateQuestions === selectedId;
+        section.classList.toggle("hidden", !matches);
+
+        const inputs = section.querySelectorAll<
+          HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+        >("[data-question-input]");
+
+        inputs.forEach((input) => {
+          const shouldDisable = !matches;
+          input.disabled = shouldDisable;
+
+          if (shouldDisable && resetResponses) {
+            if (input instanceof HTMLInputElement && input.type === "checkbox") {
+              input.checked = false;
+            } else if (input instanceof HTMLSelectElement) {
+              input.selectedIndex = 0;
+            } else {
+              input.value = "";
+            }
+          }
+        });
+
+        if (matches) {
+          hasMatch = true;
+        }
+      });
+
+      if (questionsPlaceholder) {
+        questionsPlaceholder.classList.toggle("hidden", hasMatch);
+      }
+    }
+
+    function collectFollowUpAnswers(
+      templateId: string,
+      requireResponses: boolean = false,
+    ): TemplateAnswer[] {
+      const section = Array.from(templateSections).find(
+        (node) => node.dataset.templateQuestions === templateId,
+      );
+
+      if (!section) {
+        return [];
+      }
+
+      const answers: TemplateAnswer[] = [];
+      const missing: string[] = [];
+
+      const questionNodes = section.querySelectorAll<HTMLElement>("[data-question-id]");
+
+      questionNodes.forEach((node) => {
+        const questionId = node.dataset.questionId ?? "";
+        const questionPrompt = node.dataset.questionPrompt ?? "";
+        const type = node.dataset.questionType ?? "text";
+
+        if (!questionId || !questionPrompt) {
+          return;
+        }
+
+        if (type === "multi-select") {
+          const inputs = Array.from(
+            section.querySelectorAll<HTMLInputElement>(
+              `[data-question-input="${questionId}"]`,
+            ),
+          );
+          const selectedValues = inputs
+            .filter((input) => input.checked)
+            .map((input) => input.value.trim())
+            .filter((value) => value.length > 0);
+
+          if (selectedValues.length === 0) {
+            if (requireResponses) {
+              missing.push(questionPrompt);
+            }
+          } else {
+            answers.push({
+              questionId,
+              question: questionPrompt,
+              type,
+              response: selectedValues,
+            });
+          }
+
+          return;
+        }
+
+        const input = node.querySelector<
+          HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+        >(`[data-question-input="${questionId}"]`);
+
+        if (!input) {
+          return;
+        }
+
+        const value = input.value.trim();
+
+        if (!value) {
+          if (requireResponses) {
+            missing.push(questionPrompt);
+          }
+        } else {
+          answers.push({
+            questionId,
+            question: questionPrompt,
+            type,
+            response: value,
+          });
+        }
+      });
+
+      if (requireResponses && missing.length > 0) {
+        throw new Error(
+          `Please complete the following questions: ${missing.join(", ")}`,
+        );
+      }
+
+      return answers;
+    }
+
+    function validateStep(stepIndex: number): boolean {
+      clearStepError();
+
+      if (stepIndex === 0) {
+        if (!getSelectedTemplateId()) {
+          showStepError("Please select a template to continue.");
+          return false;
+        }
+      }
+
+      if (stepIndex === 1) {
+        const templateId = getSelectedTemplateId();
+        if (!templateId) {
+          showStepError("Please return to step 1 and choose a template.");
+          currentStepIndex = 0;
+          showStep(currentStepIndex);
+          return false;
+        }
+
+        try {
+          collectFollowUpAnswers(templateId, true);
+        } catch (error) {
+          showStepError(
+            error instanceof Error
+              ? error.message
+              : "Please answer the contextual questions.",
+          );
+          return false;
+        }
+      }
+
+      return true;
+    }
+
+    updateTemplateSections();
+    showStep(currentStepIndex);
+
+    templateRadios.forEach((radio) => {
+      radio.addEventListener("change", () => {
+        updateTemplateSections(true);
+        clearStepError();
+      });
+    });
+
+    nextButton?.addEventListener("click", () => {
+      if (!validateStep(currentStepIndex)) {
+        return;
+      }
+
+      if (currentStepIndex < totalSteps - 1) {
+        currentStepIndex += 1;
+        showStep(currentStepIndex);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    });
+
+    backButton?.addEventListener("click", () => {
+      if (currentStepIndex > 0) {
+        currentStepIndex -= 1;
+        showStep(currentStepIndex);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    });
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      clearStepError();
       errorMessage.classList.add("hidden");
+      errorMessageText.textContent = "";
 
-      // Set loading state
+      const templateId = getSelectedTemplateId();
+      if (!templateId) {
+        currentStepIndex = 0;
+        showStep(currentStepIndex);
+        showStepError("Please select a template before creating your project.");
+        return;
+      }
+
+      let answers: TemplateAnswer[];
+      try {
+        answers = collectFollowUpAnswers(templateId, true);
+      } catch (validationError) {
+        currentStepIndex = 1;
+        showStep(currentStepIndex);
+        showStepError(
+          validationError instanceof Error
+            ? validationError.message
+            : "Please answer the contextual questions.",
+        );
+        return;
+      }
+
+      if (!form.checkValidity()) {
+        form.reportValidity();
+        currentStepIndex = totalSteps - 1;
+        showStep(currentStepIndex);
+        return;
+      }
+
+      const selectedTemplate = templates.find(
+        (template) => template.id === templateId,
+      );
+
+      if (!selectedTemplate) {
+        currentStepIndex = 0;
+        showStep(currentStepIndex);
+        showStepError("We couldn't load that template. Please select it again.");
+        return;
+      }
+
+      const structuredAnswers = selectedTemplate.followUpQuestions?.length
+        ? selectedTemplate.followUpQuestions.map((question) => {
+            const answer = answers.find(
+              (item) => item.questionId === question.id,
+            );
+            if (!answer) {
+              return {
+                questionId: question.id,
+                question: question.prompt,
+                type: question.type,
+                response: question.type === "multi-select" ? [] : "",
+              } satisfies TemplateAnswer;
+            }
+
+            return answer;
+          })
+        : answers;
+
       submitButton.disabled = true;
+      submitButton.classList.add("opacity-70", "cursor-not-allowed");
       buttonText.textContent = "Creating Project...";
       loadingSpinner.classList.remove("hidden");
+      toggleNavigationDisabled(true);
+
+      progressContainer.classList.add("hidden");
+      progressItems.innerHTML = "";
 
       try {
-        // Get form data
         const formData = new FormData(form);
-        const projectName = formData.get("projectName") as string;
-        const projectDescription = formData.get("projectDescription") as string;
-        const keyObjectives = formData.get("keyObjectives") as string;
-        const projectImage = formData.get("projectImage") as string;
+        const projectName = (formData.get("projectName") as string) ?? "";
+        const projectDescription =
+          (formData.get("projectDescription") as string) ?? "";
+        const keyObjectives = (formData.get("keyObjectives") as string) ?? "";
+        const projectImage = (formData.get("projectImage") as string) ?? "";
         const selectedDiagrams = formData.getAll("selectedDiagrams") as string[];
 
-        // Show progress for selected diagrams
         if (selectedDiagrams.length > 1) {
           progressContainer.classList.remove("hidden");
-          progressItems.innerHTML = "";
 
-          // Get diagram names from the mockdata (assuming it's available)
           const diagramNames: Record<string, string> = {
             erd: "ERD",
             architecture: "Architecture",
@@ -220,7 +827,7 @@ if (Astro.cookies.has("__session")) {
             kanban: "Kanban",
           };
 
-          selectedDiagrams.forEach((diagramId: string) => {
+          selectedDiagrams.forEach((diagramId) => {
             const item = document.createElement("div");
             item.className = "flex items-center gap-2 text-sm";
             item.innerHTML = `
@@ -231,14 +838,6 @@ if (Astro.cookies.has("__session")) {
           });
         }
 
-        // Create the AI request text
-        const aiRequestText = `Project Name: ${projectName}
-
-Project Description: ${projectDescription}
-
-Key Objectives: ${keyObjectives}`;
-
-        // First, create the project in Firestore
         const projectResponse = await fetch("/api/projects/create", {
           method: "POST",
           headers: {
@@ -247,15 +846,13 @@ Key Objectives: ${keyObjectives}`;
           body: JSON.stringify({
             name: projectName,
             description: projectDescription,
-            keyObjectives: keyObjectives,
+            keyObjectives,
             image: projectImage,
           }),
         });
 
         if (!projectResponse.ok) {
-          throw new Error(
-            `Failed to create project: ${projectResponse.status}`
-          );
+          throw new Error(`Failed to create project: ${projectResponse.status}`);
         }
 
         const projectResult = await projectResponse.json();
@@ -265,7 +862,7 @@ Key Objectives: ${keyObjectives}`;
         }
 
         const isAnonymous = Boolean(projectResult.isAnonymous);
-        const projectId = projectResult.projectId;
+        const projectId = projectResult.projectId as string | undefined;
 
         if (!isAnonymous && !projectId) {
           throw new Error("Missing project identifier from server response");
@@ -277,28 +874,44 @@ Key Objectives: ${keyObjectives}`;
             ? crypto.randomUUID()
             : `temp-${Date.now()}`);
 
-        // Store project data in localStorage for the save functionality
+        const templateMetadata = {
+          id: selectedTemplate.id,
+          name: selectedTemplate.name,
+          vertical: selectedTemplate.vertical,
+          verticalId: selectedTemplate.verticalId,
+          summary: selectedTemplate.summary,
+          recommendedStack: selectedTemplate.recommendedStack,
+        };
+
         localStorage.setItem(
           "projectData",
           JSON.stringify({
             id: resolvedProjectId,
             name: projectName,
             description: projectDescription,
-            keyObjectives: keyObjectives,
+            keyObjectives,
             image: projectImage,
-            selectedDiagrams: selectedDiagrams,
-          })
+            selectedDiagrams,
+            template: templateMetadata,
+            followUpAnswers: structuredAnswers,
+          }),
         );
 
-        // Call the AI endpoint
         const aiResponse = await fetch(`${workerUrl}/api/ai`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            text: aiRequestText,
-            selectedDiagrams: selectedDiagrams,
+            project: {
+              name: projectName,
+              description: projectDescription,
+              keyObjectives,
+              image: projectImage,
+            },
+            template: templateMetadata,
+            followUpAnswers: structuredAnswers,
+            selectedDiagrams,
           }),
         });
 
@@ -308,22 +921,22 @@ Key Objectives: ${keyObjectives}`;
 
         const aiResult = await aiResponse.json();
 
-        // Check for any failed diagrams
         const failedDiagrams = Object.entries(aiResult.results || {})
-          .filter(([_, result]: [string, any]) => !result.success)
-          .map(([diagramId, result]: [string, any]) => `${diagramId}: ${result.error}`);
+          .filter(([, result]: [string, any]) => !result.success)
+          .map(
+            ([diagramId, result]: [string, any]) =>
+              `${diagramId}: ${result.error || "unknown error"}`,
+          );
 
         if (failedDiagrams.length > 0) {
           console.warn("Some diagrams failed to generate:", failedDiagrams);
-          // Continue with successful diagrams, but log the failures
         }
 
-        // Store the AI response in localStorage for the next page
         localStorage.setItem("aiResponse", JSON.stringify(aiResult));
 
-        // Update the project with AI analysis for authenticated users only
         if (!isAnonymous && projectId) {
-          const transformedAIAnalysis = transformWorkerResponseToAIAnalysis(aiResult);
+          const transformedAIAnalysis =
+            transformWorkerResponseToAIAnalysis(aiResult);
           const updateResponse = await fetch(
             `/api/projects/${projectId}/ai-analysis`,
             {
@@ -331,45 +944,37 @@ Key Objectives: ${keyObjectives}`;
               headers: {
                 "Content-Type": "application/json",
               },
-              body: JSON.stringify({
-                aiAnalysis: transformedAIAnalysis,
-              }),
-            }
+              body: JSON.stringify({ aiAnalysis: transformedAIAnalysis }),
+            },
           );
 
           if (!updateResponse.ok) {
             console.warn(
-              "Failed to update project with AI analysis, but continuing..."
+              "Failed to update project with AI analysis, but continuing...",
             );
           }
         }
 
-        // Check if user is anonymous from the API response
         if (isAnonymous) {
-          // Redirect to the AI response page for anonymous users
           window.location.href = "/new-project/ai-response";
-        } else {
-          // Redirect to the specific project page for authenticated users
+        } else if (projectId) {
           window.location.href = `/projects/${projectId}`;
         }
       } catch (error) {
         console.error("Error creating project:", error);
 
-        // Show error message
-        const errorText = errorMessage.querySelector("p");
-        if (errorText) {
-          errorText.textContent =
-            error instanceof Error
-              ? error.message
-              : "An unexpected error occurred";
-        }
+        errorMessageText.textContent =
+          error instanceof Error
+            ? error.message
+            : "An unexpected error occurred";
         errorMessage.classList.remove("hidden");
+        progressContainer.classList.add("hidden");
 
-        // Reset button state
         submitButton.disabled = false;
+        submitButton.classList.remove("opacity-70", "cursor-not-allowed");
         buttonText.textContent = "Create Project";
         loadingSpinner.classList.add("hidden");
-        progressContainer.classList.add("hidden");
+        toggleNavigationDisabled(false);
       }
     });
   });

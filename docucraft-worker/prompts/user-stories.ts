@@ -64,5 +64,7 @@ Generate the user stories and output ONLY the JSON array. Do NOT include:
 
 **FINAL REMINDER:** Your response must be ONLY the JSON array. No markdown, no code blocks, no backticks, no explanations. Just the raw JSON that can be directly parsed with JSON.parse().
 
+Use the project context appended below (project details, selected template metadata, follow-up answers, and requested diagrams) to prioritize personas, acceptance criteria, and regulatory coverage in the user stories.
+
 ---
 `;

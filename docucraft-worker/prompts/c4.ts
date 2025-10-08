@@ -69,5 +69,7 @@ C4Context
 
 **FINAL REMINDER:** Your response must be ONLY the Mermaid C4 diagram code. No markdown, no code blocks, no backticks, no explanations. Just the raw Mermaid code.
 
+Use the project context appended below (project details, selected template metadata, follow-up answers, and requested diagrams) to ground the C4 view. Mirror the personas, compliance boundaries, and integrations described in that context.
+
 ---
 `;

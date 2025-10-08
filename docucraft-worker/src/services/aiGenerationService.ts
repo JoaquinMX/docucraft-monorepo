@@ -55,7 +55,7 @@ const defaultClientFactory: ClientFactory = (apiKey: string) =>
 
 export async function generateAIContent(
   promptKey: PromptKey,
-  request: Pick<AIRequestPayload, "text">,
+  request: AIRequestPayload,
   apiKey: string,
   clientFactory: ClientFactory = defaultClientFactory,
 ): Promise<string> {
@@ -67,12 +67,14 @@ export async function generateAIContent(
 
   const ai = clientFactory(apiKey);
 
+  const promptContext = buildPromptContext(request);
+
   const response = await ai.models.generateContent({
     model: MODEL_NAME,
     contents: `
 ${configuration.prompt}
 
-${request.text}`,
+${promptContext}`,
   });
 
   const rawText =
@@ -83,4 +85,63 @@ ${request.text}`,
   }
 
   return rawText;
+}
+
+function buildPromptContext(request: AIRequestPayload): string {
+  const lines: string[] = ["---", "Project Inputs:"];
+
+  const project = request.project;
+  lines.push(`Project Name: ${project.name}`);
+  lines.push(`Project Description: ${project.description}`);
+  lines.push(`Key Objectives: ${project.keyObjectives}`);
+  if (project.image) {
+    lines.push(`Reference Image: ${project.image}`);
+  }
+
+  const template = request.template;
+  if (template) {
+    lines.push("", "Selected Template:");
+    lines.push(`Name: ${template.name}`);
+    const verticalLabel = template.verticalId
+      ? `${template.vertical} (${template.verticalId})`
+      : template.vertical;
+    lines.push(`Vertical: ${verticalLabel}`);
+    lines.push(`Summary: ${template.summary}`);
+
+    const stack = template.recommendedStack?.filter(
+      (item) => typeof item === "string" && item.trim().length > 0,
+    );
+    if (stack && stack.length > 0) {
+      lines.push("Recommended Stack:");
+      stack.forEach((item) => lines.push(`- ${item}`));
+    }
+  }
+
+  const followUpAnswers = request.followUpAnswers ?? [];
+  if (followUpAnswers.length > 0) {
+    lines.push("", "Contextual Answers:");
+    followUpAnswers.forEach((answer, index) => {
+      const heading = `${index + 1}. ${answer.question}`;
+      if (Array.isArray(answer.response)) {
+        lines.push(heading);
+        answer.response
+          .filter((value) => typeof value === "string" && value.trim().length > 0)
+          .forEach((value) => lines.push(`   - ${value}`));
+      } else if (typeof answer.response === "string") {
+        const trimmed = answer.response.trim();
+        lines.push(heading);
+        if (trimmed.length > 0) {
+          lines.push(`   ${trimmed}`);
+        }
+      }
+    });
+  }
+
+  const diagrams = request.selectedDiagrams ?? [];
+  if (diagrams.length > 0) {
+    lines.push("", "Requested Diagram Types:");
+    diagrams.forEach((diagram) => lines.push(`- ${diagram}`));
+  }
+
+  return lines.join("\n");
 }

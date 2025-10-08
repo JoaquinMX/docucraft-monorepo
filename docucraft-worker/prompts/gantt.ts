@@ -102,5 +102,7 @@ dateFormat YYYY-MM-DD
 
 **FINAL REMINDER:** Your response must be ONLY the Mermaid gantt chart code. No markdown, no code blocks, no backticks, no explanations. Just the raw Mermaid code.
 
+Use the project context appended below (project details, selected template metadata, follow-up answers, and requested diagrams) to align milestones, regulatory checkpoints, and sequencing. Reflect the launch priorities surfaced in that context.
+
 ---
 `;
