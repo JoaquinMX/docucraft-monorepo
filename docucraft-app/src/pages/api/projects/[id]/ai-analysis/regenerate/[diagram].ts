@@ -15,6 +15,10 @@ const WORKER_ENDPOINT =
   import.meta.env.WORKER_URL || import.meta.env.PUBLIC_WORKER_URL;
 
 export const POST: APIRoute = async ({ params, cookies }) => {
+  let userId: string | undefined;
+  let projectIdForCatch: string | undefined;
+  let diagramIdForCatch: DiagramId | undefined;
+
   try {
     const sessionCookie = cookies.get("__session")?.value;
     if (!sessionCookie) {
@@ -34,6 +38,7 @@ export const POST: APIRoute = async ({ params, cookies }) => {
     try {
       const decodedCookie = await auth.verifySessionCookie(sessionCookie);
       user = await auth.getUser(decodedCookie.uid);
+      userId = user.uid;
       isAnonymous = user.providerData.length === 0;
     } catch (error) {
       return new Response(
@@ -81,6 +86,8 @@ export const POST: APIRoute = async ({ params, cookies }) => {
       );
     }
 
+    projectIdForCatch = projectId;
+
     const project = await FirestoreServerService.getProject(
       user.uid,
       projectId
@@ -97,6 +104,7 @@ export const POST: APIRoute = async ({ params, cookies }) => {
     }
 
     const diagramId = diagramIdParam as DiagramId;
+    diagramIdForCatch = diagramId;
     const { label } = DIAGRAM_CONFIG[diagramId];
 
     const aiRequestText = `Project Name: ${project.name}\n\nProject Description: ${project.description}\n\nKey Objectives: ${project.keyObjectives}`;
@@ -160,6 +168,24 @@ export const POST: APIRoute = async ({ params, cookies }) => {
     );
   } catch (error) {
     console.error("Error regenerating diagram:", error);
+
+    if (userId && projectIdForCatch && diagramIdForCatch) {
+      const statusField = DIAGRAM_CONFIG[diagramIdForCatch].statusField;
+      const failureStatus: Partial<AIAnalysis> = {
+        [statusField]: "failed",
+      } as Partial<AIAnalysis>;
+
+      try {
+        await FirestoreServerService.updatePartialAIAnalysis(
+          userId,
+          projectIdForCatch,
+          failureStatus
+        );
+      } catch (writeError) {
+        console.error("Failed to record regeneration failure:", writeError);
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success: false,
