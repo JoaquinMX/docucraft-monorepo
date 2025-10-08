@@ -11,6 +11,8 @@ interface ImportMetaEnv {
   readonly FIREBASE_AUTH_CERT_URL: string;
   readonly FIREBASE_CLIENT_CERT_URL: string;
   readonly WORKER_URL: string;
+  readonly PUBLIC_WORKER_URL: string;
+  readonly PUBLIC_STRIPE_PUBLISHABLE_KEY: string;
 }
 
 interface ImportMeta {

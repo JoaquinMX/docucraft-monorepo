@@ -11,10 +11,23 @@ import {
   normalizeProjectRecord,
   sanitizeProjectImageInput,
 } from "@/utils/project";
+import type { UserBillingProfile } from "@/types/Billing";
+import { InsufficientCreditsError } from "@/types/Billing";
 
 const db = getFirestore(app);
 
 export class FirestoreServerService {
+  private static createDefaultBillingProfile(): UserBillingProfile {
+    const now = new Date().toISOString();
+    return {
+      planId: "free",
+      creditsRemaining: 0,
+      subscriptionActive: false,
+      createdAt: now,
+      updatedAt: now,
+    };
+  }
+
   /**
    * Create a new project with AI analysis
    */
@@ -208,5 +221,128 @@ export class FirestoreServerService {
       console.error("Error deleting project:", error);
       throw new Error("Failed to delete project");
     }
+  }
+
+  /**
+   * Retrieve the billing profile for a user, creating a default one if missing
+   */
+  static async getOrCreateUserBillingProfile(
+    userId: string
+  ): Promise<UserBillingProfile> {
+    const docRef = db
+      .collection(FIRESTORE_COLLECTIONS.USER_BILLING_PROFILES)
+      .doc(userId);
+
+    const docSnap = await docRef.get();
+
+    if (docSnap.exists) {
+      const data = docSnap.data();
+      if (data) {
+        return data as UserBillingProfile;
+      }
+    }
+
+    const defaultProfile = FirestoreServerService.createDefaultBillingProfile();
+    await docRef.set(defaultProfile);
+    return defaultProfile;
+  }
+
+  /**
+   * Increment the user's credits (or activate subscription) when a plan is purchased
+   */
+  static async applyPlanToUser(
+    userId: string,
+    planId: string,
+    creditsToAdd: number,
+    subscriptionActive: boolean,
+    paymentIntentId?: string
+  ): Promise<UserBillingProfile> {
+    const docRef = db
+      .collection(FIRESTORE_COLLECTIONS.USER_BILLING_PROFILES)
+      .doc(userId);
+
+    return await db.runTransaction(async (transaction) => {
+      const docSnap = await transaction.get(docRef);
+      const now = new Date().toISOString();
+      const baseProfile = docSnap.exists
+        ? ((docSnap.data() as UserBillingProfile) ??
+            FirestoreServerService.createDefaultBillingProfile())
+        : FirestoreServerService.createDefaultBillingProfile();
+
+      const updatedProfile: UserBillingProfile = {
+        ...baseProfile,
+        planId,
+        subscriptionActive,
+        updatedAt: now,
+        ...(docSnap.exists ? {} : { createdAt: now }),
+      };
+
+      if (subscriptionActive) {
+        updatedProfile.subscriptionActive = true;
+      } else {
+        updatedProfile.subscriptionActive = false;
+        updatedProfile.creditsRemaining = Math.max(
+          0,
+          (baseProfile.creditsRemaining ?? 0) + creditsToAdd
+        );
+      }
+
+      if (paymentIntentId) {
+        updatedProfile.lastPaymentIntentId = paymentIntentId;
+      } else if (baseProfile.lastPaymentIntentId) {
+        updatedProfile.lastPaymentIntentId = baseProfile.lastPaymentIntentId;
+      }
+
+      transaction.set(docRef, updatedProfile, { merge: true });
+      return updatedProfile;
+    });
+  }
+
+  /**
+   * Deduct credits for AI generation. Throws InsufficientCreditsError if unavailable.
+   */
+  static async consumeCredits(
+    userId: string,
+    amount: number
+  ): Promise<UserBillingProfile> {
+    if (amount <= 0) {
+      throw new Error("Amount must be positive");
+    }
+
+    const docRef = db
+      .collection(FIRESTORE_COLLECTIONS.USER_BILLING_PROFILES)
+      .doc(userId);
+
+    return await db.runTransaction(async (transaction) => {
+      const docSnap = await transaction.get(docRef);
+      if (!docSnap.exists) {
+        throw new InsufficientCreditsError();
+      }
+
+      const profile = docSnap.data() as UserBillingProfile;
+      const now = new Date().toISOString();
+
+      if (profile.subscriptionActive) {
+        const updatedProfile: UserBillingProfile = {
+          ...profile,
+          updatedAt: now,
+        };
+        transaction.set(docRef, updatedProfile, { merge: true });
+        return updatedProfile;
+      }
+
+      if ((profile.creditsRemaining ?? 0) < amount) {
+        throw new InsufficientCreditsError();
+      }
+
+      const updatedProfile: UserBillingProfile = {
+        ...profile,
+        creditsRemaining: profile.creditsRemaining - amount,
+        updatedAt: now,
+      };
+
+      transaction.set(docRef, updatedProfile, { merge: true });
+      return updatedProfile;
+    });
   }
 }

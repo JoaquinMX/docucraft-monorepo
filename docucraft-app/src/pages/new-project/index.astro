@@ -4,6 +4,9 @@ import ImageSelector from "@/components/ImageSelector.astro";
 import DiagramSelector from "@/components/DiagramSelector.astro";
 import { app } from "../../firebase/server";
 import { getAuth } from "firebase-admin/auth";
+import { FirestoreServerService } from "@/services/firestore-server";
+import type { UserBillingProfile } from "@/types/Billing";
+import { GENERATION_CREDIT_COST } from "@/constants/billing";
 
 const auth = getAuth(app);
 
@@ -14,6 +17,8 @@ let user: {
   isAnonymous?: boolean;
   uid?: string;
 } | null = null;
+let billingProfile: UserBillingProfile | null = null;
+const generationCreditCost = GENERATION_CREDIT_COST;
 if (Astro.cookies.has("__session")) {
   try {
     const sessionCookie = Astro.cookies.get("__session")?.value;
@@ -25,6 +30,12 @@ if (Astro.cookies.has("__session")) {
       isAnonymous: userRecord.providerData.length === 0,
       uid: userRecord.uid,
     };
+
+    if (!user.isAnonymous && user.uid) {
+      billingProfile = await FirestoreServerService.getOrCreateUserBillingProfile(
+        user.uid
+      );
+    }
   } catch (error) {
     // For anonymous users, we'll create a temporary user object
     user = {
@@ -50,7 +61,7 @@ if (Astro.cookies.has("__session")) {
         Start a new project
       </h2>
 
-      {
+      { 
         user?.isAnonymous && (
           <div class="mx-4 mb-4 p-3 bg-[#374151] rounded-lg border border-[#4b5563]">
             <p class="text-[#d1d5db] text-sm">
@@ -61,6 +72,34 @@ if (Astro.cookies.has("__session")) {
               </a>{" "}
               to save your projects permanently.
             </p>
+          </div>
+        )
+      }
+
+      {
+        !user?.isAnonymous && billingProfile && (
+          <div class="mx-4 mb-4 p-3 bg-[#102132] rounded-lg border border-[#1e3446]">
+            <div class="flex flex-col gap-1 text-sm text-[#d1d5db]">
+              <p>
+                <strong>Credits:</strong>{" "}
+                {billingProfile.subscriptionActive ? (
+                  <span>Subscription active — unlimited generations.</span>
+                ) : (
+                  <span>
+                    <span id="creditBalance">
+                      {billingProfile.creditsRemaining}
+                    </span>{" "}
+                    credits remaining.
+                  </span>
+                )}
+              </p>
+              <a
+                href="/billing"
+                class="text-[#3ba7d1] font-medium hover:underline"
+              >
+                Manage billing &amp; add more credits
+              </a>
+            </div>
           </div>
         )
       }
@@ -150,6 +189,14 @@ if (Astro.cookies.has("__session")) {
   </div>
 </MainLayout>
 
+<script type="application/json" id="billing-info">
+  {JSON.stringify({
+    isAnonymous: user?.isAnonymous ?? false,
+    billingProfile,
+    generationCreditCost,
+  })}
+</script>
+
 <script>
   import { transformWorkerResponseToAIAnalysis } from "@/utils/validation";
 
@@ -173,6 +220,60 @@ if (Astro.cookies.has("__session")) {
     const progressItems = document.getElementById(
       "progressItems"
     ) as HTMLDivElement;
+    const errorText = errorMessage.querySelector("p");
+    const billingInfoElement = document.getElementById("billing-info");
+    const billingInfoData = billingInfoElement?.textContent
+      ? JSON.parse(billingInfoElement.textContent)
+      : {};
+    const creditBalanceElement = document.getElementById(
+      "creditBalance"
+    ) as HTMLSpanElement | null;
+
+    type BillingProfileState = {
+      creditsRemaining?: number;
+      subscriptionActive?: boolean;
+    } | null;
+
+    let isAnonymousUser = Boolean(billingInfoData?.isAnonymous);
+    let billingProfileState =
+      (billingInfoData?.billingProfile as BillingProfileState) ?? null;
+    const generationCost = Number(
+      billingInfoData?.generationCreditCost ?? 1
+    ) || 1;
+
+    const updateCreditBalance = (profile: BillingProfileState) => {
+      if (!profile || profile.subscriptionActive) {
+        return;
+      }
+
+      if (creditBalanceElement) {
+        creditBalanceElement.textContent = String(
+          profile.creditsRemaining ?? 0
+        );
+      }
+    };
+
+    const showErrorMessage = (message: string) => {
+      if (errorText) {
+        errorText.textContent = message;
+      }
+      errorMessage.classList.remove("hidden");
+    };
+
+    const resetButtonState = () => {
+      submitButton.disabled = false;
+      buttonText.textContent = "Create Project";
+      loadingSpinner.classList.add("hidden");
+      progressContainer.classList.add("hidden");
+      progressItems.innerHTML = "";
+    };
+
+    const hasActiveSubscription = () =>
+      Boolean(billingProfileState?.subscriptionActive);
+
+    const hasEnoughCredits = () =>
+      hasActiveSubscription() ||
+      Number(billingProfileState?.creditsRemaining ?? 0) >= generationCost;
 
     if (
       !form ||
@@ -190,6 +291,34 @@ if (Astro.cookies.has("__session")) {
 
       // Reset error message
       errorMessage.classList.add("hidden");
+      progressItems.innerHTML = "";
+      progressContainer.classList.add("hidden");
+
+      if (isAnonymousUser) {
+        showErrorMessage(
+          "Sign in to run DocuCraft AI and manage your credits from the billing page."
+        );
+        resetButtonState();
+        return;
+      }
+
+      if (!billingProfileState) {
+        showErrorMessage(
+          "We couldn't load your billing profile. Refresh the page and try again."
+        );
+        resetButtonState();
+        return;
+      }
+
+      if (!hasEnoughCredits()) {
+        const creditLabel =
+          generationCost === 1 ? "1 credit" : `${generationCost} credits`;
+        showErrorMessage(
+          `You need at least ${creditLabel} to generate with DocuCraft AI. Visit the billing page to top up.`
+        );
+        resetButtonState();
+        return;
+      }
 
       // Set loading state
       submitButton.disabled = true;
@@ -265,6 +394,7 @@ Key Objectives: ${keyObjectives}`;
         }
 
         const isAnonymous = Boolean(projectResult.isAnonymous);
+        isAnonymousUser = isAnonymous;
         const projectId = projectResult.projectId;
 
         if (!isAnonymous && !projectId) {
@@ -318,6 +448,33 @@ Key Objectives: ${keyObjectives}`;
           // Continue with successful diagrams, but log the failures
         }
 
+        if (!isAnonymous) {
+          try {
+            const consumeResponse = await fetch("/api/billing/consume", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ amount: generationCost }),
+            });
+
+            const consumePayload = await consumeResponse.json();
+
+            if (!consumeResponse.ok || !consumePayload.success) {
+              throw new Error(
+                consumePayload.error ?? "Unable to deduct credits from your account"
+              );
+            }
+
+            billingProfileState = consumePayload.profile as BillingProfileState;
+            updateCreditBalance(billingProfileState);
+          } catch (consumeError) {
+            throw consumeError instanceof Error
+              ? consumeError
+              : new Error("Unable to deduct credits from your account");
+          }
+        }
+
         // Store the AI response in localStorage for the next page
         localStorage.setItem("aiResponse", JSON.stringify(aiResult));
 
@@ -356,20 +513,14 @@ Key Objectives: ${keyObjectives}`;
         console.error("Error creating project:", error);
 
         // Show error message
-        const errorText = errorMessage.querySelector("p");
-        if (errorText) {
-          errorText.textContent =
-            error instanceof Error
-              ? error.message
-              : "An unexpected error occurred";
-        }
-        errorMessage.classList.remove("hidden");
+        showErrorMessage(
+          error instanceof Error
+            ? error.message
+            : "An unexpected error occurred"
+        );
 
         // Reset button state
-        submitButton.disabled = false;
-        buttonText.textContent = "Create Project";
-        loadingSpinner.classList.add("hidden");
-        progressContainer.classList.add("hidden");
+        resetButtonState();
       }
     });
   });
