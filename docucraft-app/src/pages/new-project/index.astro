@@ -164,7 +164,9 @@ if (Astro.cookies.has("__session")) {
 
   // Use astro:page-load to ensure this runs on every page navigation
   document.addEventListener("astro:page-load", () => {
-    const workerUrl = import.meta.env.PUBLIC_WORKER_URL;
+    const workerUrl =
+      import.meta.env.PUBLIC_WORKER_URL ??
+      "https://docucraft-worker.joaquinarturoaprendizaje.workers.dev";
     const form = document.getElementById("projectForm") as HTMLFormElement;
     const submitButton = document.getElementById(
       "submitButton"
@@ -209,12 +211,10 @@ if (Astro.cookies.has("__session")) {
       progressItems.innerHTML = "";
 
       const statusClasses: Record<string, string> = {
-        pending:
-          "bg-yellow-500/10 text-yellow-300 border border-yellow-500/40", // amber
+        pending: "bg-yellow-500/10 text-yellow-300 border border-yellow-500/40", // amber
         completed:
           "bg-emerald-500/10 text-emerald-300 border border-emerald-500/40",
-        failed:
-          "bg-red-500/10 text-red-300 border border-red-500/40",
+        failed: "bg-red-500/10 text-red-300 border border-red-500/40",
       };
 
       diagrams.forEach((diagramId) => {
@@ -289,8 +289,8 @@ if (Astro.cookies.has("__session")) {
         const selectedDiagrams = formData.getAll(
           "selectedDiagrams"
         ) as string[];
-        const validDiagramIds = selectedDiagrams.filter((diagram): diagram is DiagramId =>
-          isValidDiagramId(diagram)
+        const validDiagramIds = selectedDiagrams.filter(
+          (diagram): diagram is DiagramId => isValidDiagramId(diagram)
         );
 
         // Show progress for selected diagrams
@@ -412,15 +412,18 @@ Key Objectives: ${keyObjectives}`;
                 aiResult
               );
 
-              const partialResponse = await fetch(`/api/projects/${projectId}/ai-analysis/partial`, {
-                method: "PUT",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  partialAIAnalysis: partialUpdate,
-                }),
-              });
+              const partialResponse = await fetch(
+                `/api/projects/${projectId}/ai-analysis/partial`,
+                {
+                  method: "PUT",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    partialAIAnalysis: partialUpdate,
+                  }),
+                }
+              );
 
               if (!partialResponse.ok) {
                 console.warn("Failed to persist partial AI analysis update");
@@ -431,10 +434,7 @@ Key Objectives: ${keyObjectives}`;
 
             aggregatedResults[diagramId] = {
               success: false,
-              error:
-                error instanceof Error
-                  ? error.message
-                  : "Unknown error",
+              error: error instanceof Error ? error.message : "Unknown error",
               status: "failed",
             };
 
@@ -443,18 +443,24 @@ Key Objectives: ${keyObjectives}`;
                 [DIAGRAM_CONFIG[diagramId].statusField]: "failed",
               };
 
-              const failureResponse = await fetch(`/api/projects/${projectId}/ai-analysis/partial`, {
-                method: "PUT",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  partialAIAnalysis: failureStatus,
-                }),
-              });
+              const failureResponse = await fetch(
+                `/api/projects/${projectId}/ai-analysis/partial`,
+                {
+                  method: "PUT",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    partialAIAnalysis: failureStatus,
+                  }),
+                }
+              );
 
               if (!failureResponse.ok) {
-                console.warn("Failed to persist failure status for diagram", diagramId);
+                console.warn(
+                  "Failed to persist failure status for diagram",
+                  diagramId
+                );
               }
             }
           }
