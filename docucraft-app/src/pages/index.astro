@@ -81,6 +81,37 @@ try {
           <ButtonNavigation text="Create New Project" href="/new-project" />
         </div>
 
+        {projects.length > 0 && (
+          <div class="px-4 pb-2">
+            <label
+              for="projectSearch"
+              class="block text-[#94a3b3] text-xs font-medium uppercase tracking-[0.08em] mb-2"
+            >
+              Search Projects
+            </label>
+            <div class="relative">
+              <input
+                id="projectSearch"
+                type="text"
+                class="flex h-11 w-full rounded-lg border border-[#223649] bg-[#0c1520] px-4 pr-11 text-white placeholder:text-[#94a3b3] focus:border-[#3ba7d1] focus:outline-none text-sm"
+                placeholder="Filter by project name or description"
+                autocomplete="off"
+              />
+              <svg
+                class="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[#94a3b3]"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <circle cx="11" cy="11" r="7" />
+                <line x1="20" y1="20" x2="16.65" y2="16.65" />
+              </svg>
+            </div>
+          </div>
+        )}
+
         {
           user?.isAnonymous && (
             <div class="mx-4 mb-4 p-3 bg-[#374151] rounded-lg border border-[#4b5563]">
@@ -112,13 +143,21 @@ try {
                 />
               </div>
             ) : (
-              projects.map((project) => (
-                <ProjectCard
-                  project={project}
-                  key={project.id}
-                  href={`/projects/${project.id}`}
-                />
-              ))
+              <>
+                {projects.map((project) => (
+                  <ProjectCard
+                    project={project}
+                    key={project.id}
+                    href={`/projects/${project.id}`}
+                  />
+                ))}
+                <div
+                  id="noResultsMessage"
+                  class="hidden col-span-full rounded-lg border border-[#223649] bg-[#0c1520] px-4 py-6 text-center text-[#94a3b3] text-sm"
+                >
+                  No projects match your search.
+                </div>
+              </>
             )
           }
         </div>
@@ -126,3 +165,51 @@ try {
     </div>
   </div>
 </MainLayout>
+
+<script>
+  document.addEventListener("astro:page-load", () => {
+    const searchInput = document.getElementById(
+      "projectSearch"
+    ) as HTMLInputElement | null;
+
+    if (!searchInput) {
+      return;
+    }
+
+    const projectCards = Array.from(
+      document.querySelectorAll<HTMLElement>("[data-project-card]")
+    );
+    const noResultsMessage = document.getElementById(
+      "noResultsMessage"
+    ) as HTMLDivElement | null;
+
+    const updateVisibility = () => {
+      const query = searchInput.value.trim().toLowerCase();
+      let visibleCount = 0;
+
+      projectCards.forEach((card) => {
+        const name = card.dataset.projectName?.toLowerCase() ?? "";
+        const description = card.dataset.projectDescription?.toLowerCase() ?? "";
+        const matches =
+          query.length === 0 ||
+          name.includes(query) ||
+          description.includes(query);
+
+        if (matches) {
+          card.classList.remove("hidden");
+          visibleCount += 1;
+        } else {
+          card.classList.add("hidden");
+        }
+      });
+
+      if (noResultsMessage) {
+        const shouldShowNoResults = query.length > 0 && visibleCount === 0;
+        noResultsMessage.classList.toggle("hidden", !shouldShowNoResults);
+      }
+    };
+
+    searchInput.addEventListener("input", updateVisibility);
+    updateVisibility();
+  });
+</script>
