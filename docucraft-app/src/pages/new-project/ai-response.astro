@@ -253,7 +253,8 @@ if (Astro.cookies.has("__session")) {
 <script>
   import mermaid from "mermaid";
   import type { AIAnalysis } from "@/types/AIAnalysis";
-  import { transformAIResponseToAIAnalysis, transformWorkerResponseToAIAnalysis } from "@/utils/validation";
+  import { transformAIResponseToAIAnalysis } from "@/utils/validation";
+  import { transformWorkerResponseToAIAnalysis } from "@/utils/aiAnalysis";
   import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
   import { app } from "../../firebase/client";
 

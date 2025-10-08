@@ -11,4 +11,5 @@ export interface Project {
   updatedAt: string;
   image: ProjectImageId;
   aiAnalysis?: AIAnalysis;
+  selectedDiagrams?: string[];
 }

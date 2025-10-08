@@ -6,6 +6,10 @@ import type { Project } from "@/types/Project";
 import { DEFAULT_PROJECT_IMAGE_ID } from "@/constants/images";
 import { sanitizeProjectImageInput } from "@/utils/project";
 import { validateProjectData } from "@/utils/validation";
+import {
+  createPendingAIAnalysis,
+  isValidDiagramId,
+} from "@/utils/aiAnalysis";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
@@ -103,7 +107,20 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
     }
 
-    const { name, description, keyObjectives, aiAnalysis } = body;
+    const { name, description, keyObjectives, aiAnalysis, selectedDiagrams } =
+      body;
+
+    const sanitizedDiagrams = Array.isArray(selectedDiagrams)
+      ? selectedDiagrams.filter((diagram) => isValidDiagramId(diagram))
+      : [];
+
+    const seededAIAnalysis =
+      sanitizedDiagrams.length > 0
+        ? {
+            ...createPendingAIAnalysis(sanitizedDiagrams),
+            ...(aiAnalysis ?? {}),
+          }
+        : aiAnalysis;
 
     // Create project data (timestamps will be added by the service)
     const projectData: Omit<
@@ -113,7 +130,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       name: name.trim(),
       description: description.trim(),
       keyObjectives: keyObjectives.trim(),
-      ...(aiAnalysis && { aiAnalysis }),
+      ...(seededAIAnalysis && { aiAnalysis: seededAIAnalysis }),
+      ...(sanitizedDiagrams.length > 0 && { selectedDiagrams: sanitizedDiagrams }),
     };
 
     // Save to Firestore for authenticated users only

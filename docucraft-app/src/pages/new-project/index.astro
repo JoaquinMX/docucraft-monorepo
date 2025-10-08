@@ -151,7 +151,16 @@ if (Astro.cookies.has("__session")) {
 </MainLayout>
 
 <script>
-  import { transformWorkerResponseToAIAnalysis } from "@/utils/validation";
+  import {
+    createPendingAIAnalysis,
+    DIAGRAM_CONFIG,
+    extractPartialAIAnalysisFromWorker,
+    isValidDiagramId,
+  } from "@/utils/aiAnalysis";
+  import type { DiagramId } from "@/utils/aiAnalysis";
+  import { FIRESTORE_COLLECTIONS } from "@/constants/firestore";
+  import { app as firebaseApp } from "@/firebase/client";
+  import { doc, getFirestore, onSnapshot } from "firebase/firestore";
 
   // Use astro:page-load to ensure this runs on every page navigation
   document.addEventListener("astro:page-load", () => {
@@ -185,6 +194,80 @@ if (Astro.cookies.has("__session")) {
       return;
     }
 
+    const db = getFirestore(firebaseApp);
+    let unsubscribeProgress: (() => void) | null = null;
+
+    const renderProgress = (
+      diagrams: DiagramId[],
+      aiAnalysis: Record<string, any>
+    ) => {
+      if (!progressContainer || !progressItems) {
+        return;
+      }
+
+      progressContainer.classList.remove("hidden");
+      progressItems.innerHTML = "";
+
+      const statusClasses: Record<string, string> = {
+        pending:
+          "bg-yellow-500/10 text-yellow-300 border border-yellow-500/40", // amber
+        completed:
+          "bg-emerald-500/10 text-emerald-300 border border-emerald-500/40",
+        failed:
+          "bg-red-500/10 text-red-300 border border-red-500/40",
+      };
+
+      diagrams.forEach((diagramId) => {
+        const config = DIAGRAM_CONFIG[diagramId];
+        const status =
+          (aiAnalysis?.[config.statusField] as keyof typeof statusClasses) ||
+          "pending";
+        const label = config.label;
+        const chipClass = statusClasses[status] || statusClasses.pending;
+        const item = document.createElement("div");
+        item.className =
+          "flex items-center justify-between rounded-lg border border-[#1f2937] bg-[#111827] px-3 py-2";
+        item.innerHTML = `
+          <span class="text-white text-sm font-medium">${label}</span>
+          <span class="text-xs font-medium px-2 py-1 rounded-full ${chipClass}">
+            ${status.charAt(0).toUpperCase() + status.slice(1)}
+          </span>
+        `;
+        progressItems.appendChild(item);
+      });
+    };
+
+    const setupProgressListener = (
+      userId: string,
+      projectId: string,
+      diagrams: DiagramId[]
+    ) => {
+      if (!userId || !projectId || diagrams.length === 0) {
+        return null;
+      }
+
+      const projectDoc = doc(
+        db,
+        FIRESTORE_COLLECTIONS.USER_PROJECTS,
+        userId,
+        FIRESTORE_COLLECTIONS.PROJECTS,
+        projectId
+      );
+
+      return onSnapshot(projectDoc, (snapshot) => {
+        const data = snapshot.data() ?? {};
+        const aiAnalysis = (data.aiAnalysis as Record<string, any>) || {};
+        renderProgress(diagrams, aiAnalysis);
+      });
+    };
+
+    document.addEventListener("astro:beforeunload", () => {
+      if (unsubscribeProgress) {
+        unsubscribeProgress();
+        unsubscribeProgress = null;
+      }
+    });
+
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
 
@@ -203,32 +286,19 @@ if (Astro.cookies.has("__session")) {
         const projectDescription = formData.get("projectDescription") as string;
         const keyObjectives = formData.get("keyObjectives") as string;
         const projectImage = formData.get("projectImage") as string;
-        const selectedDiagrams = formData.getAll("selectedDiagrams") as string[];
+        const selectedDiagrams = formData.getAll(
+          "selectedDiagrams"
+        ) as string[];
+        const validDiagramIds = selectedDiagrams.filter((diagram): diagram is DiagramId =>
+          isValidDiagramId(diagram)
+        );
 
         // Show progress for selected diagrams
-        if (selectedDiagrams.length > 1) {
-          progressContainer.classList.remove("hidden");
-          progressItems.innerHTML = "";
-
-          // Get diagram names from the mockdata (assuming it's available)
-          const diagramNames: Record<string, string> = {
-            erd: "ERD",
-            architecture: "Architecture",
-            c4: "C4 Diagram",
-            "user-stories": "User Stories",
-            gantt: "Gantt Chart",
-            kanban: "Kanban",
-          };
-
-          selectedDiagrams.forEach((diagramId: string) => {
-            const item = document.createElement("div");
-            item.className = "flex items-center gap-2 text-sm";
-            item.innerHTML = `
-              <div class="animate-spin rounded-full h-3 w-3 border-b border-[#3ba7d1]"></div>
-              <span class="text-white">Generating ${diagramNames[diagramId] || diagramId}...</span>
-            `;
-            progressItems.appendChild(item);
-          });
+        if (validDiagramIds.length > 0) {
+          renderProgress(
+            validDiagramIds,
+            createPendingAIAnalysis(validDiagramIds)
+          );
         }
 
         // Create the AI request text
@@ -249,6 +319,7 @@ Key Objectives: ${keyObjectives}`;
             description: projectDescription,
             keyObjectives: keyObjectives,
             image: projectImage,
+            selectedDiagrams: validDiagramIds,
           }),
         });
 
@@ -286,63 +357,115 @@ Key Objectives: ${keyObjectives}`;
             description: projectDescription,
             keyObjectives: keyObjectives,
             image: projectImage,
-            selectedDiagrams: selectedDiagrams,
+            selectedDiagrams: validDiagramIds,
           })
         );
 
-        // Call the AI endpoint
-        const aiResponse = await fetch(`${workerUrl}/api/ai`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            text: aiRequestText,
-            selectedDiagrams: selectedDiagrams,
-          }),
-        });
-
-        if (!aiResponse.ok) {
-          throw new Error(`AI service error: ${aiResponse.status}`);
+        if (unsubscribeProgress) {
+          unsubscribeProgress();
+          unsubscribeProgress = null;
         }
 
-        const aiResult = await aiResponse.json();
-
-        // Check for any failed diagrams
-        const failedDiagrams = Object.entries(aiResult.results || {})
-          .filter(([_, result]: [string, any]) => !result.success)
-          .map(([diagramId, result]: [string, any]) => `${diagramId}: ${result.error}`);
-
-        if (failedDiagrams.length > 0) {
-          console.warn("Some diagrams failed to generate:", failedDiagrams);
-          // Continue with successful diagrams, but log the failures
+        if (!isAnonymous && projectId && validDiagramIds.length > 0) {
+          unsubscribeProgress = setupProgressListener(
+            projectResult.userId,
+            projectId,
+            validDiagramIds
+          );
         }
 
-        // Store the AI response in localStorage for the next page
-        localStorage.setItem("aiResponse", JSON.stringify(aiResult));
+        const aggregatedResults: Record<string, any> = {};
 
-        // Update the project with AI analysis for authenticated users only
-        if (!isAnonymous && projectId) {
-          const transformedAIAnalysis = transformWorkerResponseToAIAnalysis(aiResult);
-          const updateResponse = await fetch(
-            `/api/projects/${projectId}/ai-analysis`,
-            {
-              method: "PUT",
+        for (const diagramId of validDiagramIds) {
+          try {
+            const aiResponse = await fetch(`${workerUrl}/api/ai`, {
+              method: "POST",
               headers: {
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({
-                aiAnalysis: transformedAIAnalysis,
+                text: aiRequestText,
+                selectedDiagrams: [diagramId],
               }),
-            }
-          );
+            });
 
-          if (!updateResponse.ok) {
-            console.warn(
-              "Failed to update project with AI analysis, but continuing..."
-            );
+            if (!aiResponse.ok) {
+              throw new Error(`AI service error: ${aiResponse.status}`);
+            }
+
+            const aiResult = await aiResponse.json();
+            const diagramResult = aiResult.results?.[diagramId];
+
+            if (diagramResult) {
+              aggregatedResults[diagramId] = diagramResult;
+            } else {
+              aggregatedResults[diagramId] = {
+                success: false,
+                status: "failed",
+                error: "No result returned",
+              };
+            }
+
+            if (!isAnonymous && projectId) {
+              const partialUpdate = extractPartialAIAnalysisFromWorker(
+                diagramId,
+                aiResult
+              );
+
+              const partialResponse = await fetch(`/api/projects/${projectId}/ai-analysis/partial`, {
+                method: "PUT",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  partialAIAnalysis: partialUpdate,
+                }),
+              });
+
+              if (!partialResponse.ok) {
+                console.warn("Failed to persist partial AI analysis update");
+              }
+            }
+          } catch (error) {
+            console.error(`Error generating ${diagramId}:`, error);
+
+            aggregatedResults[diagramId] = {
+              success: false,
+              error:
+                error instanceof Error
+                  ? error.message
+                  : "Unknown error",
+              status: "failed",
+            };
+
+            if (!isAnonymous && projectId) {
+              const failureStatus = {
+                [DIAGRAM_CONFIG[diagramId].statusField]: "failed",
+              };
+
+              const failureResponse = await fetch(`/api/projects/${projectId}/ai-analysis/partial`, {
+                method: "PUT",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  partialAIAnalysis: failureStatus,
+                }),
+              });
+
+              if (!failureResponse.ok) {
+                console.warn("Failed to persist failure status for diagram", diagramId);
+              }
+            }
           }
         }
+
+        const aiResult = {
+          success: true,
+          results: aggregatedResults,
+        };
+
+        localStorage.setItem("aiResponse", JSON.stringify(aiResult));
 
         // Check if user is anonymous from the API response
         if (isAnonymous) {

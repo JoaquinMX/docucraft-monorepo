@@ -8,6 +8,10 @@ import { getFirestore } from "firebase-admin/firestore";
 import { FIRESTORE_COLLECTIONS } from "@/constants/firestore";
 import { transformAIResponseToAIAnalysis } from "@/utils/validation";
 import type { Project } from "@/types/Project";
+import {
+  DIAGRAM_CONFIG,
+  type DiagramId,
+} from "@/utils/aiAnalysis";
 
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -59,6 +63,54 @@ function transformAIAnalysis(aiAnalysis: any): any {
   // Otherwise, transform from the old nested format
   return transformAIResponseToAIAnalysis(aiAnalysis);
 }
+
+const transformedProjectAnalysis = project?.aiAnalysis
+  ? transformAIAnalysis(project.aiAnalysis)
+  : null;
+
+const diagramDescriptions: Record<DiagramId, string> = {
+  erd: "View the database schema",
+  architecture: "View the system design",
+  c4: "View the context diagram",
+  "user-stories": "View user stories and requirements",
+  gantt: "View the project timeline",
+  kanban: "View the development workflow",
+};
+
+const statusClasses: Record<string, string> = {
+  pending: "bg-yellow-500/10 text-yellow-300 border border-yellow-500/40",
+  completed:
+    "bg-emerald-500/10 text-emerald-300 border border-emerald-500/40",
+  failed: "bg-red-500/10 text-red-300 border border-red-500/40",
+};
+
+const diagramCards = (Object.keys(DIAGRAM_CONFIG) as DiagramId[])
+  .filter((diagramId) => {
+    const config = DIAGRAM_CONFIG[diagramId];
+    return (
+      project?.selectedDiagrams?.includes(diagramId) ||
+      Boolean(transformedProjectAnalysis?.[config.field]) ||
+      Boolean(transformedProjectAnalysis?.[config.statusField])
+    );
+  })
+  .map((diagramId) => {
+    const config = DIAGRAM_CONFIG[diagramId];
+    const status =
+      transformedProjectAnalysis?.[config.statusField] ||
+      (transformedProjectAnalysis?.[config.field] ? "completed" : null);
+    const hasContent = Boolean(transformedProjectAnalysis?.[config.field]);
+
+    return {
+      id: diagramId,
+      label: config.label,
+      description: diagramDescriptions[diagramId],
+      status: status as "pending" | "completed" | "failed" | null,
+      hasContent,
+      href: hasContent
+        ? `/projects/${project?.id}/diagram/${diagramId}`
+        : undefined,
+    };
+  });
 ---
 
 <MainLayout user={user}>
@@ -97,104 +149,67 @@ function transformAIAnalysis(aiAnalysis: any): any {
                   </p>
                 </div>
               </div>
-              {project?.aiAnalysis &&
-                (() => {
-                  // Transform the AI analysis from array format to flat object format
-                  const transformedAnalysis = transformAIAnalysis(
-                    project.aiAnalysis
-                  );
-
-                  return (
-                    <div class="px-4 pb-6">
-                      <div class="flex flex-col gap-4">
-                        <h2 class="text-white text-xl font-semibold">
-                          AI Analysis
-                        </h2>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {transformedAnalysis.erd && (
-                            <a
-                              href={`/projects/${project.id}/diagram/erd`}
-                              class="bg-[#1f2937] rounded-lg p-4 hover:bg-[#374151] transition-colors"
-                            >
-                              <h3 class="text-white font-medium mb-2">
-                                Entity Relationship Diagram
+              {diagramCards.length > 0 && (
+                <div class="px-4 pb-6">
+                  <div class="flex flex-col gap-4">
+                    <h2 class="text-white text-xl font-semibold">
+                      AI Analysis
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {diagramCards.map((card) => (
+                        <div
+                          class="bg-[#1f2937] rounded-lg p-4 border border-transparent hover:border-[#3ba7d1]/40 transition-colors"
+                          data-diagram-id={card.id}
+                        >
+                          <div class="flex items-start justify-between gap-2">
+                            <div>
+                              <h3 class="text-white font-medium mb-1">
+                                {card.label}
                               </h3>
                               <p class="text-[#9ca3af] text-sm">
-                                View the database schema
+                                {card.description}
                               </p>
-                            </a>
-                          )}
-                          {transformedAnalysis.architecture && (
-                            <a
-                              href={`/projects/${project.id}/diagram/architecture`}
-                              class="bg-[#1f2937] rounded-lg p-4 hover:bg-[#374151] transition-colors"
-                            >
-                              <h3 class="text-white font-medium mb-2">
-                                System Architecture
-                              </h3>
-                              <p class="text-[#9ca3af] text-sm">
-                                View the system design
-                              </p>
-                            </a>
-                          )}
-                          {transformedAnalysis.c4 && (
-                            <a
-                              href={`/projects/${project.id}/diagram/c4`}
-                              class="bg-[#1f2937] rounded-lg p-4 hover:bg-[#374151] transition-colors"
-                            >
-                              <h3 class="text-white font-medium mb-2">
-                                C4 Context Diagram
-                              </h3>
-                              <p class="text-[#9ca3af] text-sm">
-                                View the context diagram
-                              </p>
-                            </a>
-                          )}
-                          {transformedAnalysis.userStories &&
-                            transformedAnalysis.userStories.length > 0 && (
-                              <a
-                                href={`/projects/${project.id}/diagram/user-stories`}
-                                class="bg-[#1f2937] rounded-lg p-4 hover:bg-[#374151] transition-colors"
+                            </div>
+                            {card.status && (
+                              <span
+                                class={`text-xs font-medium px-2 py-1 rounded-full border ${
+                                  statusClasses[card.status] ||
+                                  statusClasses.pending
+                                }`}
                               >
-                                <h3 class="text-white font-medium mb-2">
-                                  User Stories
-                                </h3>
-                                <p class="text-[#9ca3af] text-sm">
-                                  View user stories and requirements
-                                </p>
-                              </a>
+                                {card.status.charAt(0).toUpperCase() +
+                                  card.status.slice(1)}
+                              </span>
                             )}
-                          {transformedAnalysis.gantt && (
+                          </div>
+                          <div class="flex flex-wrap items-center gap-2 mt-4">
                             <a
-                              href={`/projects/${project.id}/diagram/gantt`}
-                              class="bg-[#1f2937] rounded-lg p-4 hover:bg-[#374151] transition-colors"
+                              class={`inline-flex items-center justify-center rounded-md border px-3 py-2 text-sm font-medium transition-colors ${
+                                card.hasContent
+                                  ? "border-[#3ba7d1]/60 text-white hover:border-[#3ba7d1] hover:bg-[#152130]"
+                                  : "border-[#4b5563] text-[#6b7280] cursor-not-allowed"
+                              }`}
+                              href={card.href}
+                              aria-disabled={!card.hasContent}
+                              tabIndex={card.hasContent ? 0 : -1}
                             >
-                              <h3 class="text-white font-medium mb-2">
-                                Project Timeline
-                              </h3>
-                              <p class="text-[#9ca3af] text-sm">
-                                View the project timeline
-                              </p>
+                              View
                             </a>
-                          )}
-                          {transformedAnalysis.kanban && (
-                            <a
-                              href={`/projects/${project.id}/diagram/kanban`}
-                              class="bg-[#1f2937] rounded-lg p-4 hover:bg-[#374151] transition-colors"
+                            <button
+                              type="button"
+                              class="regenerate-button inline-flex items-center justify-center rounded-md bg-[#3ba7d1] px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-[#2e85a8] disabled:opacity-50 disabled:cursor-not-allowed"
+                              data-project-id={project?.id}
+                              data-diagram-id={card.id}
                             >
-                              <h3 class="text-white font-medium mb-2">
-                                Development Workflow
-                              </h3>
-                              <p class="text-[#9ca3af] text-sm">
-                                View the development workflow
-                              </p>
-                            </a>
-                          )}
+                              Regenerate
+                            </button>
+                          </div>
                         </div>
-                      </div>
+                      ))}
                     </div>
-                  );
-                })()}
+                  </div>
+                </div>
+              )}
             </>
           )
         }
@@ -202,3 +217,58 @@ function transformAIAnalysis(aiAnalysis: any): any {
     </div>
   </div>
 </MainLayout>
+
+<script>
+  document.addEventListener("astro:page-load", () => {
+    const buttons = Array.from(
+      document.querySelectorAll<HTMLButtonElement>(".regenerate-button")
+    );
+
+    buttons.forEach((button) => {
+      button.addEventListener("click", async () => {
+        const projectId = button.dataset.projectId;
+        const diagramId = button.dataset.diagramId;
+
+        if (!projectId || !diagramId) {
+          console.warn("Missing project or diagram identifier for regeneration");
+          return;
+        }
+
+        const originalText = button.textContent;
+        button.disabled = true;
+        button.textContent = "Regenerating...";
+
+        try {
+          const response = await fetch(
+            `/api/projects/${projectId}/ai-analysis/regenerate/${diagramId}`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+            }
+          );
+
+          if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
+            throw new Error(
+              (data as { error?: string }).error ||
+                "Failed to regenerate diagram"
+            );
+          }
+
+          window.location.reload();
+        } catch (error) {
+          console.error("Failed to regenerate diagram:", error);
+          alert(
+            error instanceof Error
+              ? error.message
+              : "Failed to regenerate diagram"
+          );
+          button.disabled = false;
+          button.textContent = originalText ?? "Regenerate";
+        }
+      });
+    });
+  });
+</script>

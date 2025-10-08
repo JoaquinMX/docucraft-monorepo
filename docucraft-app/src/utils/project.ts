@@ -70,6 +70,9 @@ export function normalizeProjectRecord(
     updatedAt: String(data.updatedAt ?? ""),
     image,
     aiAnalysis: data.aiAnalysis as Project["aiAnalysis"],
+    selectedDiagrams: Array.isArray(data.selectedDiagrams)
+      ? (data.selectedDiagrams as string[])
+      : undefined,
   };
 }
 
