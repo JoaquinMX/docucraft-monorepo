@@ -1,25 +1,20 @@
 ---
-import { app } from "../firebase/server";
+import { app, hasValidFirebaseConfig, missingFirebaseEnvVars } from "../firebase/server";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
 import { FIRESTORE_COLLECTIONS } from "@/constants/firestore";
 import MainLayout from "@layouts/MainLayout.astro";
 import ProjectCard from "@/components/ProjectCard.astro";
 import ButtonNavigation from "@/components/ButtonNavigation.astro";
-import LoadingSpinner from "@/components/LoadingSpinner.astro";
 import ErrorMessage from "@/components/ErrorMessage.astro";
 import EmptyState from "@/components/EmptyState.astro";
 import type { Project } from "@/types/Project";
 
-const auth = getAuth(app);
-const db = getFirestore(app);
+const missingFirebaseConfigMessage =
+  hasValidFirebaseConfig && app
+    ? null
+    : `Firebase configuration is incomplete. Please provide the following environment variables: ${missingFirebaseEnvVars.join(", ")}`;
 
-/* Verificar la sesión actual */
-if (!Astro.cookies.has("__session")) {
-  return Astro.redirect("/signin");
-}
-
-const sessionCookie = Astro.cookies.get("__session")?.value;
 let user: {
   displayName?: string | null;
   email?: string | null;
@@ -27,44 +22,62 @@ let user: {
   uid?: string;
 } | null = null;
 
-try {
-  const decodedCookie = await auth.verifySessionCookie(sessionCookie ?? "");
-  const userRecord = await auth.getUser(decodedCookie.uid);
-  user = {
-    displayName: userRecord.displayName,
-    email: userRecord.email,
-    isAnonymous: userRecord.providerData.length === 0,
-    uid: userRecord.uid,
-  };
-} catch (error) {
-  Astro.cookies.delete("__session", { path: "/" });
-  return Astro.redirect("/signin");
-}
-
-if (!user) {
-  return Astro.redirect("/signin");
-}
-
-// Fetch projects from Firestore using the new user-based structure
 let projects: Project[] = [];
 let error: string | null = null;
 
-try {
-  if (user.uid) {
-    const projectsRef = db
-      .collection(FIRESTORE_COLLECTIONS.USER_PROJECTS)
-      .doc(user.uid)
-      .collection(FIRESTORE_COLLECTIONS.PROJECTS);
-    const snapshot = await projectsRef.orderBy("createdAt", "desc").get();
+if (missingFirebaseConfigMessage) {
+  error = missingFirebaseConfigMessage;
+} else {
+  const auth = getAuth(app!);
+  const db = getFirestore(app!);
 
-    projects = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as Project[];
+  /* Verificar la sesión actual */
+  if (!Astro.cookies.has("__session")) {
+    return Astro.redirect("/signin");
   }
-} catch (err) {
-  console.error("Error fetching projects:", err);
-  error = "Failed to load projects";
+
+  const sessionCookie = Astro.cookies.get("__session")?.value;
+
+  try {
+    const decodedCookie = await auth.verifySessionCookie(sessionCookie ?? "");
+    const userRecord = await auth.getUser(decodedCookie.uid);
+    user = {
+      displayName: userRecord.displayName,
+      email: userRecord.email,
+      isAnonymous: userRecord.providerData.length === 0,
+      uid: userRecord.uid,
+    };
+  } catch (firebaseError) {
+    console.error("Error verifying Firebase session:", firebaseError);
+    Astro.cookies.delete("__session", { path: "/" });
+    return Astro.redirect("/signin");
+  }
+
+  if (!user) {
+    return Astro.redirect("/signin");
+  }
+
+  try {
+    if (user.uid) {
+      const projectsRef = db
+        .collection(FIRESTORE_COLLECTIONS.USER_PROJECTS)
+        .doc(user.uid)
+        .collection(FIRESTORE_COLLECTIONS.PROJECTS);
+      const snapshot = await projectsRef.orderBy("createdAt", "desc").get();
+
+      projects = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as Project[];
+    }
+  } catch (err) {
+    console.error("Error fetching projects:", err);
+    error = "Failed to load projects";
+  }
+}
+
+if (!user && !missingFirebaseConfigMessage) {
+  return Astro.redirect("/signin");
 }
 ---
 
@@ -80,6 +93,37 @@ try {
           </p>
           <ButtonNavigation text="Create New Project" href="/new-project" />
         </div>
+
+        {projects.length > 0 && (
+          <div class="px-4 pb-2">
+            <label
+              for="projectSearch"
+              class="block text-[#94a3b3] text-xs font-medium uppercase tracking-[0.08em] mb-2"
+            >
+              Search Projects
+            </label>
+            <div class="relative">
+              <input
+                id="projectSearch"
+                type="text"
+                class="flex h-11 w-full rounded-lg border border-[#223649] bg-[#0c1520] px-4 pr-11 text-white placeholder:text-[#94a3b3] focus:border-[#3ba7d1] focus:outline-none text-sm"
+                placeholder="Filter by project name or description"
+                autocomplete="off"
+              />
+              <svg
+                class="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[#94a3b3]"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <circle cx="11" cy="11" r="7" />
+                <line x1="20" y1="20" x2="16.65" y2="16.65" />
+              </svg>
+            </div>
+          </div>
+        )}
 
         {
           user?.isAnonymous && (
@@ -112,13 +156,21 @@ try {
                 />
               </div>
             ) : (
-              projects.map((project) => (
-                <ProjectCard
-                  project={project}
-                  key={project.id}
-                  href={`/projects/${project.id}`}
-                />
-              ))
+              <>
+                {projects.map((project) => (
+                  <ProjectCard
+                    project={project}
+                    key={project.id}
+                    href={`/projects/${project.id}`}
+                  />
+                ))}
+                <div
+                  id="noResultsMessage"
+                  class="hidden col-span-full rounded-lg border border-[#223649] bg-[#0c1520] px-4 py-6 text-center text-[#94a3b3] text-sm"
+                >
+                  No projects match your search.
+                </div>
+              </>
             )
           }
         </div>
@@ -126,3 +178,51 @@ try {
     </div>
   </div>
 </MainLayout>
+
+<script>
+  document.addEventListener("astro:page-load", () => {
+    const searchInput = document.getElementById(
+      "projectSearch"
+    ) as HTMLInputElement | null;
+
+    if (!searchInput) {
+      return;
+    }
+
+    const projectCards = Array.from(
+      document.querySelectorAll<HTMLElement>("[data-project-card]")
+    );
+    const noResultsMessage = document.getElementById(
+      "noResultsMessage"
+    ) as HTMLDivElement | null;
+
+    const updateVisibility = () => {
+      const query = searchInput.value.trim().toLowerCase();
+      let visibleCount = 0;
+
+      projectCards.forEach((card) => {
+        const name = card.dataset.projectName?.toLowerCase() ?? "";
+        const description = card.dataset.projectDescription?.toLowerCase() ?? "";
+        const matches =
+          query.length === 0 ||
+          name.includes(query) ||
+          description.includes(query);
+
+        if (matches) {
+          card.classList.remove("hidden");
+          visibleCount += 1;
+        } else {
+          card.classList.add("hidden");
+        }
+      });
+
+      if (noResultsMessage) {
+        const shouldShowNoResults = query.length > 0 && visibleCount === 0;
+        noResultsMessage.classList.toggle("hidden", !shouldShowNoResults);
+      }
+    };
+
+    searchInput.addEventListener("input", updateVisibility);
+    updateVisibility();
+  });
+</script>
