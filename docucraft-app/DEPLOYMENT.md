@@ -18,7 +18,7 @@ The application requires the following environment variables to be set:
 
 ### Cloudflare Worker Configuration
 
-- `WORKER_URL`: URL of your Cloudflare Worker
+- `PUBLIC_WORKER_URL`: URL of your Cloudflare Worker (prefixed with PUBLIC_ for client-side access)
   - For development: `http://localhost:8787`
   - For production: `https://your-worker.your-subdomain.workers.dev`
 
@@ -40,7 +40,7 @@ wrangler deploy
 
 ### 3. Update the App Environment
 
-Set the `WORKER_URL` environment variable in your app deployment to point to your deployed worker URL.
+Set the `PUBLIC_WORKER_URL` environment variable in your app deployment to point to your deployed worker URL.
 
 ## Local Development
 
@@ -58,12 +58,12 @@ cd docucraft-app
 npm run dev
 ```
 
-3. Set the `WORKER_URL` environment variable to `http://localhost:8787` in your app.
+3. Set the `PUBLIC_WORKER_URL` environment variable to `http://localhost:8787` in your app.
 
 ## Production Deployment
 
 1. Deploy the worker first and note the URL
-2. Set the `WORKER_URL` environment variable in your app deployment to the worker URL
+2. Set the `PUBLIC_WORKER_URL` environment variable in your app deployment to the worker URL
 3. Deploy the app
 
 ## Recent Fixes
