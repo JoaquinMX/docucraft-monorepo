@@ -8,8 +8,31 @@ export const AIResponse = z.object({
   text: Str(),
 });
 
+export const FollowUpAnswer = z.object({
+  id: Str(),
+  prompt: Str(),
+  answer: Str(),
+});
+
+export const ProjectDetails = z.object({
+  name: Str(),
+  description: Str(),
+  keyObjectives: Str(),
+});
+
+export const TemplateDetails = z.object({
+  id: Str(),
+  name: Str(),
+  description: Str(),
+  verticalId: Str(),
+  verticalLabel: z.string().min(1).nullable().optional(),
+  recommendedStack: z.array(Str()),
+});
+
 export const AIRequest = z.object({
-  text: Str(),
+  project: ProjectDetails,
+  template: TemplateDetails,
+  followUpAnswers: z.array(FollowUpAnswer).optional(),
   selectedDiagrams: z.array(z.string()).optional(),
 });
 

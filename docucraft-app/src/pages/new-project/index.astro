@@ -2,10 +2,25 @@
 import MainLayout from "@layouts/MainLayout.astro";
 import ImageSelector from "@/components/ImageSelector.astro";
 import DiagramSelector from "@/components/DiagramSelector.astro";
+import { projectTemplates, projectVerticals } from "@/data/projectTemplates";
 import { app } from "../../firebase/server";
 import { getAuth } from "firebase-admin/auth";
 
 const auth = getAuth(app);
+
+const templatesByVertical = projectVerticals
+  .map((vertical) => ({
+    ...vertical,
+    templates: projectTemplates.filter(
+      (template) => template.verticalId === vertical.id,
+    ),
+  }))
+  .filter((vertical) => vertical.templates.length > 0);
+
+const templatePayload = JSON.stringify({
+  templates: projectTemplates,
+  verticals: projectVerticals,
+});
 
 // Get current user (allow anonymous users)
 let user: {
@@ -65,79 +80,259 @@ if (Astro.cookies.has("__session")) {
         )
       }
 
+      <ol
+        id="stepTracker"
+        class="flex items-center justify-between px-4 pb-4 text-xs text-[#94a3b3]"
+      >
+        <li data-step-index="1" class="font-semibold text-white">
+          <span class="block uppercase tracking-wide">Step 1</span>
+          <span class="text-sm">Template</span>
+        </li>
+        <li data-step-index="2" class="opacity-60">
+          <span class="block uppercase tracking-wide">Step 2</span>
+          <span class="text-sm">Context</span>
+        </li>
+        <li data-step-index="3" class="opacity-60">
+          <span class="block uppercase tracking-wide">Step 3</span>
+          <span class="text-sm">Details</span>
+        </li>
+      </ol>
+
       <form id="projectForm" class="flex flex-col gap-4 px-4" novalidate>
-        <div class="flex flex-col gap-2">
-          <label
-            for="projectName"
-            class="text-white text-sm font-medium leading-normal"
-          >
-            Project Name
-          </label>
-          <input
-            type="text"
-            name="projectName"
-            id="projectName"
-            class="flex h-12 w-full resize-none overflow-hidden rounded-lg border border-[#223649] bg-[#0c1520] px-4 text-white placeholder:text-[#94a3b3] focus:border-[#3ba7d1] focus:outline-none text-sm"
-            placeholder="Enter your project name"
-            required
-          />
-        </div>
+        <input type="hidden" name="selectedTemplateId" id="selectedTemplateId" />
 
-        <div class="flex flex-col gap-2">
-          <label
-            for="projectDescription"
-            class="text-white text-sm font-medium leading-normal"
-          >
-            Project Description
-          </label>
-          <textarea
-            name="projectDescription"
-            id="projectDescription"
-            rows="4"
-            class="flex w-full resize-none overflow-hidden rounded-lg border border-[#223649] bg-[#0c1520] px-4 py-3 text-white placeholder:text-[#94a3b3] focus:border-[#3ba7d1] focus:outline-none text-sm"
-            placeholder="Describe your project in detail..."
-            required></textarea>
-        </div>
-
-        <div class="flex flex-col gap-2">
-          <label
-            for="keyObjectives"
-            class="text-white text-sm font-medium leading-normal"
-          >
-            Key Objectives
-          </label>
-          <textarea
-            name="keyObjectives"
-            id="keyObjectives"
-            rows="3"
-            class="flex w-full resize-none overflow-hidden rounded-lg border border-[#223649] bg-[#0c1520] px-4 py-3 text-white placeholder:text-[#94a3b3] focus:border-[#3ba7d1] focus:outline-none text-sm"
-            placeholder="What are the main goals of this project?"
-            required></textarea>
-        </div>
-
-        <ImageSelector name="projectImage" selectedImage="alpha" />
-
-        <DiagramSelector />
-
-        <button
-          type="submit"
-          id="submitButton"
-          class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-6 bg-[#3ba7d1] text-white text-sm font-medium leading-normal hover:bg-[#2e85a8] transition-colors mt-2"
+        <section
+          data-step="1"
+          class="step-panel flex flex-col gap-4"
+          aria-labelledby="template-step-title"
         >
-          <span id="buttonText">Create Project</span>
-          <div
-            id="loadingSpinner"
-            class="hidden animate-spin rounded-full h-4 w-4 border-b-2 border-white ml-2"
-          >
+          <div class="flex flex-col gap-1">
+            <h3
+              id="template-step-title"
+              class="text-white text-lg font-semibold leading-tight"
+            >
+              Choose a project template
+            </h3>
+            <p class="text-[#94a3b3] text-sm">
+              Pick the closest blueprint and we'll tailor follow-up questions and
+              diagram generation around it.
+            </p>
           </div>
-        </button>
 
-        <div id="progressContainer" class="hidden mt-4 space-y-2">
-          <p class="text-white text-sm font-medium">Generating diagrams...</p>
-          <div id="progressItems" class="space-y-1">
-            <!-- Progress items will be added here dynamically -->
+          <div class="flex flex-col gap-6">
+            {
+              templatesByVertical.map((vertical) => (
+                <div class="flex flex-col gap-3" data-vertical-id={vertical.id}>
+                  <div>
+                    <h4 class="text-white text-base font-semibold">
+                      {vertical.label}
+                    </h4>
+                    <p class="text-[#94a3b3] text-sm">{vertical.description}</p>
+                  </div>
+
+                  <div class="flex flex-col gap-3">
+                    {vertical.templates.map((template) => (
+                      <label
+                        class="template-card relative flex cursor-pointer flex-col gap-3 rounded-lg border border-[#223649] bg-[#0d1722] p-4 transition-colors focus-within:outline-none focus-within:ring-2 focus-within:ring-[#3ba7d1]"
+                        data-template-id={template.id}
+                        data-template-name={template.name}
+                      >
+                        <input
+                          type="radio"
+                          name="templateOption"
+                          value={template.id}
+                          class="sr-only"
+                          aria-label={`Select ${template.name}`}
+                        />
+                        <div class="flex flex-col gap-1">
+                          <span class="text-white text-sm font-semibold">
+                            {template.name}
+                          </span>
+                          <p class="text-[#94a3b3] text-sm">
+                            {template.description}
+                          </p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2">
+                          <span class="text-[#94a3b3] text-xs uppercase tracking-wide">
+                            Recommended Stack
+                          </span>
+                          <div class="flex flex-wrap gap-2">
+                            {template.recommendedStack.map((item) => (
+                              <span
+                                class="rounded-full bg-[#142238] px-2 py-1 text-xs font-medium text-[#cbd5f5]"
+                              >
+                                {item}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              ))
+            }
           </div>
-        </div>
+
+          <div class="flex justify-end pt-2">
+            <button
+              type="button"
+              id="goToQuestions"
+              class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-11 px-6 bg-[#3ba7d1] text-white text-sm font-medium leading-normal transition-colors disabled:cursor-not-allowed disabled:bg-[#1f2d3a]"
+              disabled
+            >
+              Continue
+            </button>
+          </div>
+        </section>
+
+        <section
+          data-step="2"
+          class="step-panel hidden flex flex-col gap-4"
+          aria-labelledby="context-step-title"
+        >
+          <div class="flex flex-col gap-1">
+            <h3
+              id="context-step-title"
+              class="text-white text-lg font-semibold leading-tight"
+            >
+              Provide project context
+            </h3>
+            <p id="context-step-description" class="text-[#94a3b3] text-sm">
+              Answer a few follow-up questions so the assistant can ground its
+              recommendations.
+            </p>
+          </div>
+
+          <div id="questionContainer" class="flex flex-col gap-4"></div>
+
+          <div id="noQuestionsMessage" class="hidden rounded-lg border border-[#223649] bg-[#101b29] p-4">
+            <p class="text-[#94a3b3] text-sm">
+              This template doesn't require extra information. You can continue
+              to project details.
+            </p>
+          </div>
+
+          <div class="flex items-center justify-between pt-2">
+            <button
+              type="button"
+              id="backToTemplates"
+              class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-11 px-6 border border-[#223649] bg-transparent text-white text-sm font-medium leading-normal hover:border-[#3ba7d1] hover:text-[#3ba7d1] transition-colors"
+            >
+              Back
+            </button>
+            <button
+              type="button"
+              id="goToDetails"
+              class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-11 px-6 bg-[#3ba7d1] text-white text-sm font-medium leading-normal transition-colors"
+            >
+              Continue
+            </button>
+          </div>
+        </section>
+
+        <section
+          data-step="3"
+          class="step-panel hidden flex flex-col gap-4"
+          aria-labelledby="details-step-title"
+        >
+          <div class="flex flex-col gap-1">
+            <h3
+              id="details-step-title"
+              class="text-white text-lg font-semibold leading-tight"
+            >
+              Project details & diagrams
+            </h3>
+            <p class="text-[#94a3b3] text-sm">
+              Share the essentials and select which diagrams or plans you want
+              the AI to generate.
+            </p>
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <label
+              for="projectName"
+              class="text-white text-sm font-medium leading-normal"
+            >
+              Project Name
+            </label>
+            <input
+              type="text"
+              name="projectName"
+              id="projectName"
+              class="flex h-12 w-full resize-none overflow-hidden rounded-lg border border-[#223649] bg-[#0c1520] px-4 text-white placeholder:text-[#94a3b3] focus:border-[#3ba7d1] focus:outline-none text-sm"
+              placeholder="Enter your project name"
+              required
+            />
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <label
+              for="projectDescription"
+              class="text-white text-sm font-medium leading-normal"
+            >
+              Project Description
+            </label>
+            <textarea
+              name="projectDescription"
+              id="projectDescription"
+              rows="4"
+              class="flex w-full resize-none overflow-hidden rounded-lg border border-[#223649] bg-[#0c1520] px-4 py-3 text-white placeholder:text-[#94a3b3] focus:border-[#3ba7d1] focus:outline-none text-sm"
+              placeholder="Describe your project in detail..."
+              required
+            ></textarea>
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <label
+              for="keyObjectives"
+              class="text-white text-sm font-medium leading-normal"
+            >
+              Key Objectives
+            </label>
+            <textarea
+              name="keyObjectives"
+              id="keyObjectives"
+              rows="3"
+              class="flex w-full resize-none overflow-hidden rounded-lg border border-[#223649] bg-[#0c1520] px-4 py-3 text-white placeholder:text-[#94a3b3] focus:border-[#3ba7d1] focus:outline-none text-sm"
+              placeholder="What are the main goals of this project?"
+              required
+            ></textarea>
+          </div>
+
+          <ImageSelector name="projectImage" selectedImage="alpha" />
+
+          <DiagramSelector />
+
+          <div class="flex items-center justify-between pt-2">
+            <button
+              type="button"
+              id="backToQuestions"
+              class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-11 px-6 border border-[#223649] bg-transparent text-white text-sm font-medium leading-normal hover:border-[#3ba7d1] hover:text-[#3ba7d1] transition-colors"
+            >
+              Back
+            </button>
+            <button
+              type="submit"
+              id="submitButton"
+              class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-6 bg-[#3ba7d1] text-white text-sm font-medium leading-normal hover:bg-[#2e85a8] transition-colors"
+            >
+              <span id="buttonText">Create Project</span>
+              <div
+                id="loadingSpinner"
+                class="hidden animate-spin rounded-full h-4 w-4 border-b-2 border-white ml-2"
+              >
+              </div>
+            </button>
+          </div>
+
+          <div id="progressContainer" class="hidden mt-4 space-y-2">
+            <p class="text-white text-sm font-medium">Generating diagrams...</p>
+            <div id="progressItems" class="space-y-1">
+              <!-- Progress items will be added here dynamically -->
+            </div>
+          </div>
+        </section>
       </form>
 
       <div
@@ -148,6 +343,10 @@ if (Astro.cookies.has("__session")) {
       </div>
     </div>
   </div>
+
+  <script type="application/json" id="template-data">
+    {templatePayload}
+  </script>
 </MainLayout>
 
 <script>
@@ -162,35 +361,61 @@ if (Astro.cookies.has("__session")) {
   import { app as firebaseApp } from "@/firebase/client";
   import { doc, getFirestore, onSnapshot } from "firebase/firestore";
 
-  // Use astro:page-load to ensure this runs on every page navigation
+  type TemplateQuestionType = "text" | "textarea" | "select";
+  type TemplateQuestion = {
+    id: string;
+    prompt: string;
+    type: TemplateQuestionType;
+    helperText?: string;
+    options?: string[];
+    required?: boolean;
+  };
+  type ProjectTemplate = {
+    id: string;
+    name: string;
+    description: string;
+    verticalId: string;
+    recommendedStack: string[];
+    followUpQuestions: TemplateQuestion[];
+  };
+  type ProjectVertical = {
+    id: string;
+    label: string;
+  };
+
   document.addEventListener("astro:page-load", () => {
     const workerUrl =
       import.meta.env.PUBLIC_WORKER_URL ??
       "https://docucraft-worker.joaquinarturoaprendizaje.workers.dev";
     const form = document.getElementById("projectForm") as HTMLFormElement;
     const submitButton = document.getElementById(
-      "submitButton"
+      "submitButton",
     ) as HTMLButtonElement;
     const buttonText = document.getElementById("buttonText") as HTMLSpanElement;
     const loadingSpinner = document.getElementById(
-      "loadingSpinner"
+      "loadingSpinner",
     ) as HTMLDivElement;
     const errorMessage = document.getElementById(
-      "errorMessage"
+      "errorMessage",
     ) as HTMLDivElement;
     const progressContainer = document.getElementById(
-      "progressContainer"
+      "progressContainer",
     ) as HTMLDivElement;
     const progressItems = document.getElementById(
-      "progressItems"
+      "progressItems",
     ) as HTMLDivElement;
+    const templateDataElement = document.getElementById(
+      "template-data",
+    ) as HTMLScriptElement | null;
+    const stepTracker = document.getElementById("stepTracker");
 
     if (
       !form ||
       !submitButton ||
       !buttonText ||
       !loadingSpinner ||
-      !errorMessage
+      !errorMessage ||
+      !stepTracker
     ) {
       console.error("Required form elements not found");
       return;
@@ -199,9 +424,340 @@ if (Astro.cookies.has("__session")) {
     const db = getFirestore(firebaseApp);
     let unsubscribeProgress: (() => void) | null = null;
 
+    const templateData = templateDataElement?.textContent
+      ? (JSON.parse(templateDataElement.textContent) as {
+          templates: ProjectTemplate[];
+          verticals: ProjectVertical[];
+        })
+      : { templates: [], verticals: [] };
+
+    const templateMap = new Map<string, ProjectTemplate>(
+      templateData.templates.map((template) => [template.id, template]),
+    );
+    const verticalMap = new Map<string, ProjectVertical>(
+      templateData.verticals.map((vertical) => [vertical.id, vertical]),
+    );
+
+    const stepPanels = Array.from(
+      form.querySelectorAll<HTMLElement>(".step-panel"),
+    );
+    let currentStep = 1;
+    let selectedTemplateId: string | null = null;
+    let followUpAnswers: Record<string, string> = {};
+
+    const templateCards = Array.from(
+      form.querySelectorAll<HTMLLabelElement>("[data-template-id]"),
+    );
+    const templateHiddenInput = document.getElementById(
+      "selectedTemplateId",
+    ) as HTMLInputElement | null;
+    const questionContainer = document.getElementById(
+      "questionContainer",
+    ) as HTMLDivElement | null;
+    const contextDescription = document.getElementById(
+      "context-step-description",
+    ) as HTMLParagraphElement | null;
+    const contextHeading = document.getElementById(
+      "context-step-title",
+    ) as HTMLHeadingElement | null;
+    const noQuestionsMessage = document.getElementById(
+      "noQuestionsMessage",
+    ) as HTMLDivElement | null;
+    const goToQuestionsButton = document.getElementById(
+      "goToQuestions",
+    ) as HTMLButtonElement | null;
+    const goToDetailsButton = document.getElementById(
+      "goToDetails",
+    ) as HTMLButtonElement | null;
+    const backToTemplatesButton = document.getElementById(
+      "backToTemplates",
+    ) as HTMLButtonElement | null;
+    const backToQuestionsButton = document.getElementById(
+      "backToQuestions",
+    ) as HTMLButtonElement | null;
+
+    const updateStepVisibility = (nextStep: number) => {
+      currentStep = nextStep;
+      stepPanels.forEach((panel) => {
+        const stepValue = Number(panel.dataset.step);
+        if (!Number.isNaN(stepValue)) {
+          if (stepValue === currentStep) {
+            panel.classList.remove("hidden");
+          } else {
+            panel.classList.add("hidden");
+          }
+        }
+      });
+
+      const indicatorItems = Array.from(
+        stepTracker.querySelectorAll<HTMLElement>("[data-step-index]"),
+      );
+      indicatorItems.forEach((item) => {
+        const stepIndex = Number(item.dataset.stepIndex);
+        if (stepIndex === currentStep) {
+          item.classList.remove("opacity-60");
+          item.classList.add("text-white", "font-semibold");
+        } else {
+          item.classList.add("opacity-60");
+          item.classList.remove("font-semibold", "text-white");
+        }
+      });
+    };
+
+    const clearTemplateCardStates = () => {
+      templateCards.forEach((card) => {
+        card.classList.remove("border-[#3ba7d1]", "bg-[#132032]");
+        card.classList.add("border-[#223649]", "bg-[#0d1722]");
+      });
+    };
+
+    const renderQuestions = (template: ProjectTemplate) => {
+      followUpAnswers = {};
+
+      if (!questionContainer || !noQuestionsMessage) {
+        return;
+      }
+
+      questionContainer.innerHTML = "";
+
+      if (template.followUpQuestions.length === 0) {
+        noQuestionsMessage.classList.remove("hidden");
+        return;
+      }
+
+      noQuestionsMessage.classList.add("hidden");
+
+      template.followUpQuestions.forEach((question) => {
+        const wrapper = document.createElement("div");
+        wrapper.className = "flex flex-col gap-2";
+
+        const label = document.createElement("label");
+        label.className = "text-white text-sm font-medium leading-normal";
+        label.htmlFor = `question-${question.id}`;
+        label.textContent = question.prompt;
+
+        const helper = question.helperText
+          ? (() => {
+              const helperText = document.createElement("p");
+              helperText.className = "text-[#94a3b3] text-xs";
+              helperText.textContent = question.helperText;
+              return helperText;
+            })()
+          : null;
+
+        let input:
+          | HTMLInputElement
+          | HTMLTextAreaElement
+          | HTMLSelectElement;
+
+        if (question.type === "textarea") {
+          input = document.createElement("textarea");
+          input.rows = 3;
+          input.className =
+            "flex w-full resize-none overflow-hidden rounded-lg border border-[#223649] bg-[#0c1520] px-4 py-3 text-white placeholder:text-[#94a3b3] focus:border-[#3ba7d1] focus:outline-none text-sm";
+        } else if (question.type === "select") {
+          input = document.createElement("select");
+          input.className =
+            "flex h-12 w-full rounded-lg border border-[#223649] bg-[#0c1520] px-4 text-white focus:border-[#3ba7d1] focus:outline-none text-sm";
+
+          const placeholderOption = document.createElement("option");
+          placeholderOption.value = "";
+          placeholderOption.textContent = "Select an option";
+          placeholderOption.disabled = true;
+          placeholderOption.selected = true;
+          input.appendChild(placeholderOption);
+
+          (question.options ?? []).forEach((option) => {
+            const opt = document.createElement("option");
+            opt.value = option;
+            opt.textContent = option;
+            input.appendChild(opt);
+          });
+        } else {
+          input = document.createElement("input");
+          input.type = "text";
+          input.className =
+            "flex h-12 w-full rounded-lg border border-[#223649] bg-[#0c1520] px-4 text-white placeholder:text-[#94a3b3] focus:border-[#3ba7d1] focus:outline-none text-sm";
+        }
+
+        input.id = `question-${question.id}`;
+        input.dataset.questionId = question.id;
+        input.dataset.required = question.required ? "true" : "false";
+
+        wrapper.appendChild(label);
+        if (helper) {
+          wrapper.appendChild(helper);
+        }
+        wrapper.appendChild(input);
+        questionContainer.appendChild(wrapper);
+      });
+    };
+
+    const handleTemplateSelection = (templateId: string | null) => {
+      if (!templateHiddenInput || !goToQuestionsButton) {
+        return;
+      }
+
+      if (!templateId) {
+        selectedTemplateId = null;
+        templateHiddenInput.value = "";
+        goToQuestionsButton.disabled = true;
+        return;
+      }
+
+      const template = templateMap.get(templateId);
+
+      if (!template) {
+        selectedTemplateId = null;
+        templateHiddenInput.value = "";
+        goToQuestionsButton.disabled = true;
+        return;
+      }
+
+      clearTemplateCardStates();
+
+      const activeCard = templateCards.find(
+        (card) => card.dataset.templateId === templateId,
+      );
+      if (activeCard) {
+        activeCard.classList.remove("border-[#223649]", "bg-[#0d1722]");
+        activeCard.classList.add("border-[#3ba7d1]", "bg-[#132032]");
+      }
+
+      selectedTemplateId = templateId;
+      templateHiddenInput.value = templateId;
+      goToQuestionsButton.disabled = false;
+
+      if (contextHeading) {
+        contextHeading.textContent = `Provide project context for ${template.name}`;
+      }
+
+      if (contextDescription) {
+        const verticalLabel = verticalMap.get(template.verticalId)?.label;
+        contextDescription.textContent = verticalLabel
+          ? `${template.description} (${verticalLabel})`
+          : template.description;
+      }
+
+      renderQuestions(template);
+    };
+
+    templateCards.forEach((card) => {
+      const templateId = card.dataset.templateId;
+      const radio = card.querySelector("input[type='radio']") as
+        | HTMLInputElement
+        | null;
+
+      card.addEventListener("click", (event) => {
+        event.preventDefault();
+        if (radio) {
+          radio.checked = true;
+        }
+        handleTemplateSelection(templateId ?? null);
+      });
+
+      if (radio) {
+        radio.addEventListener("change", () => {
+          handleTemplateSelection(templateId ?? null);
+        });
+      }
+    });
+
+    const validateFollowUpAnswers = (): boolean => {
+      if (!selectedTemplateId) {
+        return false;
+      }
+
+      const template = templateMap.get(selectedTemplateId);
+      if (!template || !questionContainer) {
+        return false;
+      }
+
+      let isValid = true;
+      followUpAnswers = {};
+
+      template.followUpQuestions.forEach((question) => {
+        const input = questionContainer.querySelector<
+          HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+        >(`[data-question-id="${question.id}"]`);
+
+        if (!input) {
+          return;
+        }
+
+        const value = input.value.trim();
+        if (question.required && value.length === 0) {
+          input.classList.add("border-red-500");
+          isValid = false;
+        } else {
+          input.classList.remove("border-red-500");
+        }
+
+        if (value.length > 0) {
+          followUpAnswers[question.id] = value;
+        }
+      });
+
+      if (!isValid) {
+        const errorText = errorMessage.querySelector("p");
+        if (errorText) {
+          errorText.textContent =
+            "Please answer the required contextual questions before continuing.";
+        }
+        errorMessage.classList.remove("hidden");
+      } else {
+        errorMessage.classList.add("hidden");
+      }
+
+      return isValid;
+    };
+
+    const goToStep = (targetStep: number) => {
+      updateStepVisibility(targetStep);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+
+    goToQuestionsButton?.addEventListener("click", () => {
+      if (!selectedTemplateId) {
+        return;
+      }
+      errorMessage.classList.add("hidden");
+      goToStep(2);
+    });
+
+    goToDetailsButton?.addEventListener("click", () => {
+      if (!selectedTemplateId) {
+        return;
+      }
+
+      const template = templateMap.get(selectedTemplateId);
+      if (!template) {
+        return;
+      }
+
+      if (template.followUpQuestions.length > 0) {
+        if (!validateFollowUpAnswers()) {
+          return;
+        }
+      }
+
+      errorMessage.classList.add("hidden");
+      goToStep(3);
+    });
+
+    backToTemplatesButton?.addEventListener("click", () => {
+      errorMessage.classList.add("hidden");
+      goToStep(1);
+    });
+
+    backToQuestionsButton?.addEventListener("click", () => {
+      errorMessage.classList.add("hidden");
+      goToStep(2);
+    });
+
     const renderProgress = (
       diagrams: DiagramId[],
-      aiAnalysis: Record<string, any>
+      aiAnalysis: Record<string, any>,
     ) => {
       if (!progressContainer || !progressItems) {
         return;
@@ -240,7 +796,7 @@ if (Astro.cookies.has("__session")) {
     const setupProgressListener = (
       userId: string,
       projectId: string,
-      diagrams: DiagramId[]
+      diagrams: DiagramId[],
     ) => {
       if (!userId || !projectId || diagrams.length === 0) {
         return null;
@@ -251,7 +807,7 @@ if (Astro.cookies.has("__session")) {
         FIRESTORE_COLLECTIONS.USER_PROJECTS,
         userId,
         FIRESTORE_COLLECTIONS.PROJECTS,
-        projectId
+        projectId,
       );
 
       return onSnapshot(projectDoc, (snapshot) => {
@@ -268,8 +824,35 @@ if (Astro.cookies.has("__session")) {
       }
     });
 
+    updateStepVisibility(currentStep);
+
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
+
+      if (!selectedTemplateId) {
+        const errorText = errorMessage.querySelector("p");
+        if (errorText) {
+          errorText.textContent = "Please select a template to continue.";
+        }
+        errorMessage.classList.remove("hidden");
+        return;
+      }
+
+      errorMessage.classList.add("hidden");
+
+      const template = templateMap.get(selectedTemplateId);
+      if (!template) {
+        const errorText = errorMessage.querySelector("p");
+        if (errorText) {
+          errorText.textContent = "The selected template could not be found.";
+        }
+        errorMessage.classList.remove("hidden");
+        return;
+      }
+
+      if (template.followUpQuestions.length > 0 && !validateFollowUpAnswers()) {
+        return;
+      }
 
       // Reset error message
       errorMessage.classList.add("hidden");
@@ -287,26 +870,29 @@ if (Astro.cookies.has("__session")) {
         const keyObjectives = formData.get("keyObjectives") as string;
         const projectImage = formData.get("projectImage") as string;
         const selectedDiagrams = formData.getAll(
-          "selectedDiagrams"
+          "selectedDiagrams",
         ) as string[];
         const validDiagramIds = selectedDiagrams.filter(
-          (diagram): diagram is DiagramId => isValidDiagramId(diagram)
+          (diagram): diagram is DiagramId => isValidDiagramId(diagram),
         );
 
         // Show progress for selected diagrams
         if (validDiagramIds.length > 0) {
           renderProgress(
             validDiagramIds,
-            createPendingAIAnalysis(validDiagramIds)
+            createPendingAIAnalysis(validDiagramIds),
           );
         }
 
-        // Create the AI request text
-        const aiRequestText = `Project Name: ${projectName}
+        const followUpAnswerList = template.followUpQuestions
+          .map((question) => ({
+            id: question.id,
+            prompt: question.prompt,
+            answer: followUpAnswers[question.id] ?? "",
+          }))
+          .filter((entry) => entry.answer.trim().length > 0);
 
-Project Description: ${projectDescription}
-
-Key Objectives: ${keyObjectives}`;
+        const templateVertical = verticalMap.get(template.verticalId);
 
         // First, create the project in Firestore
         const projectResponse = await fetch("/api/projects/create", {
@@ -320,12 +906,21 @@ Key Objectives: ${keyObjectives}`;
             keyObjectives: keyObjectives,
             image: projectImage,
             selectedDiagrams: validDiagramIds,
+            template: {
+              id: template.id,
+              name: template.name,
+              description: template.description,
+              verticalId: template.verticalId,
+              verticalLabel: templateVertical?.label,
+              recommendedStack: template.recommendedStack,
+            },
+            followUpAnswers: followUpAnswerList,
           }),
         });
 
         if (!projectResponse.ok) {
           throw new Error(
-            `Failed to create project: ${projectResponse.status}`
+            `Failed to create project: ${projectResponse.status}`,
           );
         }
 
@@ -349,17 +944,25 @@ Key Objectives: ${keyObjectives}`;
             : `temp-${Date.now()}`);
 
         // Store project data in localStorage for the save functionality
-        localStorage.setItem(
-          "projectData",
-          JSON.stringify({
-            id: resolvedProjectId,
-            name: projectName,
-            description: projectDescription,
-            keyObjectives: keyObjectives,
-            image: projectImage,
-            selectedDiagrams: validDiagramIds,
-          })
-        );
+        const projectPayload = {
+          id: resolvedProjectId,
+          name: projectName,
+          description: projectDescription,
+          keyObjectives: keyObjectives,
+          image: projectImage,
+          selectedDiagrams: validDiagramIds,
+          template: {
+            id: template.id,
+            name: template.name,
+            description: template.description,
+            verticalId: template.verticalId,
+            verticalLabel: templateVertical?.label ?? null,
+            recommendedStack: template.recommendedStack,
+          },
+          followUpAnswers: followUpAnswerList,
+        };
+
+        localStorage.setItem("projectData", JSON.stringify(projectPayload));
 
         if (unsubscribeProgress) {
           unsubscribeProgress();
@@ -370,11 +973,29 @@ Key Objectives: ${keyObjectives}`;
           unsubscribeProgress = setupProgressListener(
             projectResult.userId,
             projectId,
-            validDiagramIds
+            validDiagramIds,
           );
         }
 
         const aggregatedResults: Record<string, any> = {};
+
+        const requestPayload = {
+          project: {
+            name: projectName,
+            description: projectDescription,
+            keyObjectives: keyObjectives,
+          },
+          template: {
+            id: template.id,
+            name: template.name,
+            description: template.description,
+            verticalId: template.verticalId,
+            verticalLabel: templateVertical?.label ?? null,
+            recommendedStack: template.recommendedStack,
+          },
+          followUpAnswers: followUpAnswerList,
+          selectedDiagrams: [] as string[],
+        };
 
         for (const diagramId of validDiagramIds) {
           try {
@@ -384,7 +1005,7 @@ Key Objectives: ${keyObjectives}`;
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({
-                text: aiRequestText,
+                ...requestPayload,
                 selectedDiagrams: [diagramId],
               }),
             });
@@ -409,7 +1030,7 @@ Key Objectives: ${keyObjectives}`;
             if (!isAnonymous && projectId) {
               const partialUpdate = extractPartialAIAnalysisFromWorker(
                 diagramId,
-                aiResult
+                aiResult,
               );
 
               const partialResponse = await fetch(
@@ -422,7 +1043,7 @@ Key Objectives: ${keyObjectives}`;
                   body: JSON.stringify({
                     partialAIAnalysis: partialUpdate,
                   }),
-                }
+                },
               );
 
               if (!partialResponse.ok) {
@@ -453,13 +1074,13 @@ Key Objectives: ${keyObjectives}`;
                   body: JSON.stringify({
                     partialAIAnalysis: failureStatus,
                   }),
-                }
+                },
               );
 
               if (!failureResponse.ok) {
                 console.warn(
                   "Failed to persist failure status for diagram",
-                  diagramId
+                  diagramId,
                 );
               }
             }
@@ -473,18 +1094,14 @@ Key Objectives: ${keyObjectives}`;
 
         localStorage.setItem("aiResponse", JSON.stringify(aiResult));
 
-        // Check if user is anonymous from the API response
         if (isAnonymous) {
-          // Redirect to the AI response page for anonymous users
           window.location.href = "/new-project/ai-response";
         } else {
-          // Redirect to the specific project page for authenticated users
           window.location.href = `/projects/${projectId}`;
         }
       } catch (error) {
         console.error("Error creating project:", error);
 
-        // Show error message
         const errorText = errorMessage.querySelector("p");
         if (errorText) {
           errorText.textContent =
@@ -494,11 +1111,10 @@ Key Objectives: ${keyObjectives}`;
         }
         errorMessage.classList.remove("hidden");
 
-        // Reset button state
         submitButton.disabled = false;
         buttonText.textContent = "Create Project";
         loadingSpinner.classList.add("hidden");
-        progressContainer.classList.add("hidden");
+        progressContainer?.classList.add("hidden");
       }
     });
   });

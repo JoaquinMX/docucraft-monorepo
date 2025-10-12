@@ -53,9 +53,48 @@ const defaultClientFactory: ClientFactory = (apiKey: string) =>
     apiKey,
   });
 
+export function buildPromptContext(request: AIRequestPayload): string {
+  const sections: string[] = [];
+
+  sections.push(
+    [
+      "Project Overview:",
+      `- Name: ${request.project.name}`,
+      `- Description: ${request.project.description}`,
+      `- Key Objectives: ${request.project.keyObjectives}`,
+    ].join("\n"),
+  );
+
+  const verticalLabel = request.template.verticalLabel ?? request.template.verticalId;
+  const recommendedStack =
+    request.template.recommendedStack.length > 0
+      ? request.template.recommendedStack.join(", ")
+      : "None specified";
+
+  sections.push(
+    [
+      "Template Context:",
+      `- Template: ${request.template.name}`,
+      `- Vertical: ${verticalLabel}`,
+      `- Template Description: ${request.template.description}`,
+      `- Recommended Tech Stack: ${recommendedStack}`,
+    ].join("\n"),
+  );
+
+  if (request.followUpAnswers && request.followUpAnswers.length > 0) {
+    const answers = request.followUpAnswers
+      .map((answer) => `- ${answer.prompt}: ${answer.answer}`)
+      .join("\n");
+
+    sections.push(["Follow-up Answers:", answers].join("\n"));
+  }
+
+  return sections.join("\n\n");
+}
+
 export async function generateAIContent(
   promptKey: PromptKey,
-  request: Pick<AIRequestPayload, "text">,
+  request: AIRequestPayload,
   apiKey: string,
   clientFactory: ClientFactory = defaultClientFactory,
 ): Promise<string> {
@@ -72,7 +111,7 @@ export async function generateAIContent(
     contents: `
 ${configuration.prompt}
 
-${request.text}`,
+${buildPromptContext(request)}`,
   });
 
   const rawText =
