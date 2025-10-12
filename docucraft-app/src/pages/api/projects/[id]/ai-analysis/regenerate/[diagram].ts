@@ -107,21 +107,36 @@ export const POST: APIRoute = async ({ params, cookies }) => {
     diagramIdForCatch = diagramId;
     const { label } = DIAGRAM_CONFIG[diagramId];
 
-    const aiRequestText = `Project Name: ${project.name}\n\nProject Description: ${project.description}\n\nKey Objectives: ${project.keyObjectives}`;
-
     await FirestoreServerService.updatePartialAIAnalysis(
       user.uid,
       projectId,
       createPendingAIAnalysis([diagramId])
     );
 
+    const existingTemplate = (project as Record<string, unknown>)?.template;
+    const existingContext = (project as Record<string, unknown>)?.contextualAnswers;
+
+    const workerPayload: Record<string, unknown> = {
+      project: {
+        name: project.name,
+        description: project.description,
+        keyObjectives: project.keyObjectives,
+      },
+      selectedDiagrams: [diagramId],
+    };
+
+    if (existingTemplate) {
+      workerPayload.template = existingTemplate;
+    }
+
+    if (existingContext) {
+      workerPayload.contextualAnswers = existingContext;
+    }
+
     const workerResponse = await fetch(`${WORKER_ENDPOINT}/api/ai`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        text: aiRequestText,
-        selectedDiagrams: [diagramId],
-      }),
+      body: JSON.stringify(workerPayload),
     });
 
     if (!workerResponse.ok) {

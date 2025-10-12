@@ -53,9 +53,89 @@ const defaultClientFactory: ClientFactory = (apiKey: string) =>
     apiKey,
   });
 
+export function buildPromptContext(request: AIRequestPayload): string {
+  const sections: string[] = [];
+
+  if (request.project) {
+    const { name, description, keyObjectives } = request.project;
+    sections.push(
+      `Project Name: ${name}`,
+      `Project Description: ${description}`,
+      `Key Objectives: ${keyObjectives}`,
+    );
+  }
+
+  if (request.template) {
+    const { name, description, vertical, recommendedTechStack } =
+      request.template;
+
+    const stackLines: string[] = [];
+
+    if (recommendedTechStack.frontend?.length) {
+      stackLines.push(
+        `Frontend Stack: ${recommendedTechStack.frontend.join(", ")}`,
+      );
+    }
+
+    if (recommendedTechStack.backend?.length) {
+      stackLines.push(
+        `Backend Stack: ${recommendedTechStack.backend.join(", ")}`,
+      );
+    }
+
+    if (recommendedTechStack.database?.length) {
+      stackLines.push(
+        `Data Layer: ${recommendedTechStack.database.join(", ")}`,
+      );
+    }
+
+    if (recommendedTechStack.infrastructure?.length) {
+      stackLines.push(
+        `Infrastructure: ${recommendedTechStack.infrastructure.join(", ")}`,
+      );
+    }
+
+    if (recommendedTechStack.notes?.length) {
+      stackLines.push(
+        `Implementation Notes: ${recommendedTechStack.notes.join(" | ")}`,
+      );
+    }
+
+    const templateSection = [`Template: ${name} (${vertical})`, description]
+      .concat(stackLines)
+      .filter(Boolean)
+      .join("\n");
+
+    sections.push(templateSection);
+  }
+
+  if (request.contextualAnswers?.length) {
+    const answerLines = request.contextualAnswers
+      .map((entry) => {
+        const value = Array.isArray(entry.answer)
+          ? entry.answer.join(", ")
+          : entry.answer;
+        return `- ${entry.question}: ${value}`;
+      })
+      .join("\n");
+
+    sections.push(`Contextual Insights:\n${answerLines}`);
+  }
+
+  if (sections.length > 0) {
+    return sections.join("\n\n");
+  }
+
+  if (request.text) {
+    return request.text;
+  }
+
+  throw new Error("AI request payload is missing project context");
+}
+
 export async function generateAIContent(
   promptKey: PromptKey,
-  request: Pick<AIRequestPayload, "text">,
+  request: AIRequestPayload,
   apiKey: string,
   clientFactory: ClientFactory = defaultClientFactory,
 ): Promise<string> {
@@ -67,12 +147,14 @@ export async function generateAIContent(
 
   const ai = clientFactory(apiKey);
 
+  const promptContext = buildPromptContext(request);
+
   const response = await ai.models.generateContent({
     model: MODEL_NAME,
     contents: `
 ${configuration.prompt}
 
-${request.text}`,
+${promptContext}`,
   });
 
   const rawText =
