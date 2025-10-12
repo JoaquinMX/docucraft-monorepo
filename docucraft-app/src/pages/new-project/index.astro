@@ -2,6 +2,7 @@
 import MainLayout from "@layouts/MainLayout.astro";
 import ImageSelector from "@/components/ImageSelector.astro";
 import DiagramSelector from "@/components/DiagramSelector.astro";
+import { projectTemplates } from "@/data/projectTemplates";
 import { app } from "../../firebase/server";
 import { getAuth } from "firebase-admin/auth";
 
@@ -39,6 +40,8 @@ if (Astro.cookies.has("__session")) {
 }
 ---
 
+const serializedTemplates = JSON.stringify(projectTemplates);
+
 <MainLayout user={user}>
   <div class="flex flex-1 justify-center py-5">
     <div
@@ -64,80 +67,184 @@ if (Astro.cookies.has("__session")) {
           </div>
         )
       }
+      <form id="projectForm" class="flex flex-col gap-6 px-4" novalidate>
+        <input type="hidden" id="templateId" name="templateId" />
 
-      <form id="projectForm" class="flex flex-col gap-4 px-4" novalidate>
-        <div class="flex flex-col gap-2">
-          <label
-            for="projectName"
-            class="text-white text-sm font-medium leading-normal"
-          >
-            Project Name
-          </label>
-          <input
-            type="text"
-            name="projectName"
-            id="projectName"
-            class="flex h-12 w-full resize-none overflow-hidden rounded-lg border border-[#223649] bg-[#0c1520] px-4 text-white placeholder:text-[#94a3b3] focus:border-[#3ba7d1] focus:outline-none text-sm"
-            placeholder="Enter your project name"
-            required
-          />
-        </div>
-
-        <div class="flex flex-col gap-2">
-          <label
-            for="projectDescription"
-            class="text-white text-sm font-medium leading-normal"
-          >
-            Project Description
-          </label>
-          <textarea
-            name="projectDescription"
-            id="projectDescription"
-            rows="4"
-            class="flex w-full resize-none overflow-hidden rounded-lg border border-[#223649] bg-[#0c1520] px-4 py-3 text-white placeholder:text-[#94a3b3] focus:border-[#3ba7d1] focus:outline-none text-sm"
-            placeholder="Describe your project in detail..."
-            required></textarea>
-        </div>
-
-        <div class="flex flex-col gap-2">
-          <label
-            for="keyObjectives"
-            class="text-white text-sm font-medium leading-normal"
-          >
-            Key Objectives
-          </label>
-          <textarea
-            name="keyObjectives"
-            id="keyObjectives"
-            rows="3"
-            class="flex w-full resize-none overflow-hidden rounded-lg border border-[#223649] bg-[#0c1520] px-4 py-3 text-white placeholder:text-[#94a3b3] focus:border-[#3ba7d1] focus:outline-none text-sm"
-            placeholder="What are the main goals of this project?"
-            required></textarea>
-        </div>
-
-        <ImageSelector name="projectImage" selectedImage="alpha" />
-
-        <DiagramSelector />
-
-        <button
-          type="submit"
-          id="submitButton"
-          class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-6 bg-[#3ba7d1] text-white text-sm font-medium leading-normal hover:bg-[#2e85a8] transition-colors mt-2"
-        >
-          <span id="buttonText">Create Project</span>
-          <div
-            id="loadingSpinner"
-            class="hidden animate-spin rounded-full h-4 w-4 border-b-2 border-white ml-2"
-          >
+        <section data-step="1" class="flex flex-col gap-4">
+          <div>
+            <h3 class="text-white text-lg font-semibold">1. Choose a starting template</h3>
+            <p class="text-[#94a3b3] text-sm">
+              Select the product vertical that best reflects your idea. We will use it to pre-seed relevant architecture, diagrams, and follow-up prompts.
+            </p>
           </div>
-        </button>
 
-        <div id="progressContainer" class="hidden mt-4 space-y-2">
-          <p class="text-white text-sm font-medium">Generating diagrams...</p>
-          <div id="progressItems" class="space-y-1">
-            <!-- Progress items will be added here dynamically -->
+          <div id="templateOptions" class="flex flex-col gap-3">
+            {
+              projectTemplates.map((template) => (
+                <label
+                  class="group border border-[#223649] bg-[#0c1520] rounded-xl p-4 cursor-pointer hover:border-[#3ba7d1] transition-colors"
+                  data-template-card
+                >
+                  <div class="flex items-start gap-3">
+                    <input
+                      type="radio"
+                      name="templateOption"
+                      value={template.id}
+                      class="mt-1 h-4 w-4 text-[#3ba7d1] focus:ring-[#3ba7d1]"
+                      data-template-id={template.id}
+                    />
+                    <div class="flex flex-col gap-1">
+                      <div class="flex items-center gap-2">
+                        <span class="text-white font-semibold text-base">{template.name}</span>
+                        <span class="text-xs px-2 py-0.5 rounded-full bg-[#1f2937] text-[#9ca3af]">{template.vertical}</span>
+                      </div>
+                      <p class="text-[#94a3b3] text-sm leading-relaxed">{template.description}</p>
+                    </div>
+                  </div>
+                </label>
+              ))
+            }
           </div>
-        </div>
+
+          <p id="templateError" class="hidden text-xs text-red-400">
+            Please choose a template to continue.
+          </p>
+
+          <div class="flex justify-end">
+            <button
+              type="button"
+              id="toQuestions"
+              class="px-4 py-2 bg-[#3ba7d1] text-white text-sm font-medium rounded-lg hover:bg-[#2e85a8] transition-colors"
+            >
+              Next: Contextual questions
+            </button>
+          </div>
+        </section>
+
+        <section data-step="2" class="hidden flex flex-col gap-4">
+          <div>
+            <h3 class="text-white text-lg font-semibold">2. Capture project context</h3>
+            <p class="text-[#94a3b3] text-sm">
+              Help us understand nuances about your idea so diagram prompts include the correct constraints.
+            </p>
+          </div>
+
+          <div id="selectedTemplateSummary" class="border border-[#223649] bg-[#0c1520] rounded-xl p-4 text-sm text-[#d1d5db] hidden"></div>
+
+          <div id="questionContainer" class="flex flex-col gap-4"></div>
+
+          <p id="contextError" class="hidden text-xs text-red-400">
+            Please provide answers for the highlighted questions.
+          </p>
+
+          <div class="flex justify-between">
+            <button
+              type="button"
+              id="backToTemplates"
+              class="px-4 py-2 bg-[#1f2937] text-white text-sm font-medium rounded-lg hover:bg-[#374151] transition-colors"
+            >
+              Back
+            </button>
+            <button
+              type="button"
+              id="toDetails"
+              class="px-4 py-2 bg-[#3ba7d1] text-white text-sm font-medium rounded-lg hover:bg-[#2e85a8] transition-colors"
+            >
+              Next: Project details
+            </button>
+          </div>
+        </section>
+
+        <section data-step="3" class="hidden flex flex-col gap-4">
+          <div>
+            <h3 class="text-white text-lg font-semibold">3. Finalise project details</h3>
+            <p class="text-[#94a3b3] text-sm">
+              Provide the remaining details and choose which diagrams Docucraft should generate.
+            </p>
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <label
+              for="projectName"
+              class="text-white text-sm font-medium leading-normal"
+            >
+              Project Name
+            </label>
+            <input
+              type="text"
+              name="projectName"
+              id="projectName"
+              class="flex h-12 w-full resize-none overflow-hidden rounded-lg border border-[#223649] bg-[#0c1520] px-4 text-white placeholder:text-[#94a3b3] focus:border-[#3ba7d1] focus:outline-none text-sm"
+              placeholder="Enter your project name"
+              required
+            />
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <label
+              for="projectDescription"
+              class="text-white text-sm font-medium leading-normal"
+            >
+              Project Description
+            </label>
+            <textarea
+              name="projectDescription"
+              id="projectDescription"
+              rows="4"
+              class="flex w-full resize-none overflow-hidden rounded-lg border border-[#223649] bg-[#0c1520] px-4 py-3 text-white placeholder:text-[#94a3b3] focus:border-[#3ba7d1] focus:outline-none text-sm"
+              placeholder="Describe your project in detail..."
+              required></textarea>
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <label
+              for="keyObjectives"
+              class="text-white text-sm font-medium leading-normal"
+            >
+              Key Objectives
+            </label>
+            <textarea
+              name="keyObjectives"
+              id="keyObjectives"
+              rows="3"
+              class="flex w-full resize-none overflow-hidden rounded-lg border border-[#223649] bg-[#0c1520] px-4 py-3 text-white placeholder:text-[#94a3b3] focus:border-[#3ba7d1] focus:outline-none text-sm"
+              placeholder="What are the main goals of this project?"
+              required></textarea>
+          </div>
+
+          <ImageSelector name="projectImage" selectedImage="alpha" />
+
+          <DiagramSelector />
+
+          <div class="flex items-center justify-between gap-3 pt-2">
+            <button
+              type="button"
+              id="backToQuestions"
+              class="px-4 py-2 bg-[#1f2937] text-white text-sm font-medium rounded-lg hover:bg-[#374151] transition-colors"
+            >
+              Back
+            </button>
+            <button
+              type="submit"
+              id="submitButton"
+              class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-6 bg-[#3ba7d1] text-white text-sm font-medium leading-normal hover:bg-[#2e85a8] transition-colors"
+            >
+              <span id="buttonText">Create Project</span>
+              <div
+                id="loadingSpinner"
+                class="hidden animate-spin rounded-full h-4 w-4 border-b-2 border-white ml-2"
+              >
+              </div>
+            </button>
+          </div>
+
+          <div id="progressContainer" class="hidden mt-4 space-y-2">
+            <p class="text-white text-sm font-medium">Generating diagrams...</p>
+            <div id="progressItems" class="space-y-1">
+              <!-- Progress items will be added here dynamically -->
+            </div>
+          </div>
+        </section>
       </form>
 
       <div
@@ -148,6 +255,9 @@ if (Astro.cookies.has("__session")) {
       </div>
     </div>
   </div>
+  <script type="application/json" id="projectTemplatesData">
+    {serializedTemplates}
+  </script>
 </MainLayout>
 
 <script>
@@ -184,6 +294,452 @@ if (Astro.cookies.has("__session")) {
     const progressItems = document.getElementById(
       "progressItems"
     ) as HTMLDivElement;
+
+    const templateDataElement = document.getElementById(
+      "projectTemplatesData"
+    );
+
+    type TemplateFollowUpQuestion = {
+      id: string;
+      question: string;
+      type: "text" | "select" | "multi-select";
+      helperText?: string;
+      placeholder?: string;
+      options?: string[];
+    };
+
+    type Template = {
+      id: string;
+      name: string;
+      description: string;
+      vertical: string;
+      recommendedTechStack: {
+        frontend?: string[];
+        backend?: string[];
+        database?: string[];
+        infrastructure?: string[];
+        notes?: string[];
+      };
+      followUpQuestions: TemplateFollowUpQuestion[];
+    };
+
+    const templates: Template[] = templateDataElement
+      ? JSON.parse(templateDataElement.textContent ?? "[]")
+      : [];
+
+    const templateIdInput = document.getElementById(
+      "templateId"
+    ) as HTMLInputElement | null;
+    const templateError = document.getElementById(
+      "templateError"
+    ) as HTMLElement | null;
+    const contextError = document.getElementById(
+      "contextError"
+    ) as HTMLElement | null;
+    const selectedTemplateSummary = document.getElementById(
+      "selectedTemplateSummary"
+    ) as HTMLDivElement | null;
+    const questionContainer = document.getElementById(
+      "questionContainer"
+    ) as HTMLDivElement | null;
+    const stepSections = Array.from(
+      document.querySelectorAll<HTMLElement>("[data-step]")
+    );
+    const templateCards = Array.from(
+      document.querySelectorAll<HTMLLabelElement>("[data-template-card]")
+    );
+    const templateRadios = Array.from(
+      document.querySelectorAll<HTMLInputElement>('input[name="templateOption"]')
+    );
+    const toQuestionsButton = document.getElementById(
+      "toQuestions"
+    ) as HTMLButtonElement | null;
+    const backToTemplatesButton = document.getElementById(
+      "backToTemplates"
+    ) as HTMLButtonElement | null;
+    const backToQuestionsButton = document.getElementById(
+      "backToQuestions"
+    ) as HTMLButtonElement | null;
+    const toDetailsButton = document.getElementById(
+      "toDetails"
+    ) as HTMLButtonElement | null;
+
+    type ContextualAnswers = Record<string, string | string[]>;
+
+    const wizardState: {
+      selectedTemplateId: string;
+      contextualAnswers: ContextualAnswers;
+    } = {
+      selectedTemplateId: templateIdInput?.value || "",
+      contextualAnswers: {},
+    };
+
+    const setStep = (step: number) => {
+      stepSections.forEach((section) => {
+        const stepValue = Number(section.getAttribute("data-step"));
+        if (stepValue === step) {
+          section.classList.remove("hidden");
+        } else {
+          section.classList.add("hidden");
+        }
+      });
+
+      if (step === 1 && templateError) {
+        templateError.classList.add("hidden");
+      }
+
+      if (step === 2 && contextError) {
+        contextError.classList.add("hidden");
+      }
+    };
+
+    const updateTemplateStyles = () => {
+      templateCards.forEach((card) => {
+        const radio = card.querySelector<HTMLInputElement>('input[type="radio"]');
+        if (radio?.checked) {
+          card.classList.remove("border-[#223649]");
+          card.classList.add("border-[#3ba7d1]", "bg-[#102032]");
+        } else {
+          card.classList.remove("border-[#3ba7d1]", "bg-[#102032]");
+          card.classList.add("border-[#223649]");
+        }
+      });
+    };
+
+    const formatStackSection = (title: string, values?: string[]) => {
+      if (!values || values.length === 0) {
+        return "";
+      }
+
+      if (title === "Notes") {
+        const items = values
+          .map((note) => `<li class="list-disc list-inside text-[#d1d5db]">${note}</li>`)
+          .join("");
+        return `
+          <div class="flex flex-col gap-1">
+            <p class="text-[#9ca3af] text-xs uppercase tracking-wide">${title}</p>
+            <ul class="space-y-1">
+              ${items}
+            </ul>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="flex flex-col gap-1">
+          <p class="text-[#9ca3af] text-xs uppercase tracking-wide">${title}</p>
+          <p class="text-[#d1d5db]">${values.join(", ")}</p>
+        </div>
+      `;
+    };
+
+    const renderTemplateSummary = (template: Template | null) => {
+      if (!selectedTemplateSummary) {
+        return;
+      }
+
+      if (!template) {
+        selectedTemplateSummary.classList.add("hidden");
+        selectedTemplateSummary.innerHTML = "";
+        return;
+      }
+
+      const sections: Array<{ title: string; values?: string[] }> = [
+        { title: "Frontend", values: template.recommendedTechStack.frontend },
+        { title: "Backend", values: template.recommendedTechStack.backend },
+        { title: "Database", values: template.recommendedTechStack.database },
+        {
+          title: "Infrastructure",
+          values: template.recommendedTechStack.infrastructure,
+        },
+        { title: "Notes", values: template.recommendedTechStack.notes },
+      ];
+
+      const summaryHtml = sections
+        .map((section) => formatStackSection(section.title, section.values))
+        .filter(Boolean)
+        .join("");
+
+      selectedTemplateSummary.innerHTML = `
+        <div class="flex flex-col gap-3">
+          <div class="flex flex-col gap-1">
+            <p class="text-white text-base font-semibold">${template.name}</p>
+            <p class="text-[#9ca3af] text-xs uppercase tracking-wide">${template.vertical}</p>
+          </div>
+          <p class="text-[#94a3b3] text-sm">${template.description}</p>
+          <div class="grid gap-3">
+            ${summaryHtml}
+          </div>
+        </div>
+      `;
+      selectedTemplateSummary.classList.remove("hidden");
+    };
+
+    const renderQuestions = (
+      template: Template,
+      answers: ContextualAnswers = {}
+    ) => {
+      if (!questionContainer) {
+        return;
+      }
+
+      questionContainer.innerHTML = "";
+
+      template.followUpQuestions.forEach((question) => {
+        const wrapper = document.createElement("div");
+        wrapper.dataset.questionId = question.id;
+        wrapper.dataset.questionType = question.type;
+        wrapper.className = "flex flex-col gap-2 border border-[#1f2937] bg-[#0c1520] rounded-xl p-4";
+
+        const label = document.createElement("label");
+        label.className = "text-white text-sm font-medium";
+        label.htmlFor = `question-${question.id}`;
+        label.textContent = question.question;
+        wrapper.appendChild(label);
+
+        let inputElement: HTMLElement | null = null;
+
+        if (question.type === "text") {
+          const textarea = document.createElement("textarea");
+          textarea.id = `question-${question.id}`;
+          textarea.className =
+            "flex w-full resize-none overflow-hidden rounded-lg border border-[#223649] bg-[#0c1520] px-3 py-2 text-white placeholder:text-[#94a3b3] focus:border-[#3ba7d1] focus:outline-none text-sm";
+          textarea.rows = 3;
+          textarea.placeholder = question.placeholder ?? "";
+          const value = answers[question.id];
+          if (typeof value === "string") {
+            textarea.value = value;
+          }
+          inputElement = textarea;
+        } else if (question.type === "select") {
+          const select = document.createElement("select");
+          select.id = `question-${question.id}`;
+          select.className =
+            "flex h-11 w-full rounded-lg border border-[#223649] bg-[#0c1520] px-3 text-white focus:border-[#3ba7d1] focus:outline-none text-sm";
+          const placeholderOption = document.createElement("option");
+          placeholderOption.value = "";
+          placeholderOption.textContent = "Select an option";
+          select.appendChild(placeholderOption);
+
+          (question.options ?? []).forEach((option) => {
+            const optionElement = document.createElement("option");
+            optionElement.value = option;
+            optionElement.textContent = option;
+            select.appendChild(optionElement);
+          });
+
+          const value = answers[question.id];
+          if (typeof value === "string") {
+            select.value = value;
+          }
+
+          inputElement = select;
+        } else if (question.type === "multi-select") {
+          const selectedValues = new Set(
+            Array.isArray(answers[question.id])
+              ? (answers[question.id] as string[])
+              : []
+          );
+          const listWrapper = document.createElement("div");
+          listWrapper.className = "flex flex-col gap-2";
+
+          (question.options ?? []).forEach((option, index) => {
+            const optionId = `question-${question.id}-${index}`;
+            const optionWrapper = document.createElement("label");
+            optionWrapper.className = "flex items-center gap-3 text-sm text-[#d1d5db]";
+            const checkbox = document.createElement("input");
+            checkbox.type = "checkbox";
+            checkbox.value = option;
+            checkbox.id = optionId;
+            checkbox.className =
+              "h-4 w-4 rounded border-[#223649] bg-[#0c1520] text-[#3ba7d1] focus:ring-[#3ba7d1]";
+            checkbox.checked = selectedValues.has(option);
+            optionWrapper.appendChild(checkbox);
+            const optionLabel = document.createElement("span");
+            optionLabel.textContent = option;
+            optionWrapper.appendChild(optionLabel);
+            listWrapper.appendChild(optionWrapper);
+          });
+
+          inputElement = listWrapper;
+        }
+
+        if (inputElement) {
+          wrapper.appendChild(inputElement);
+        }
+
+        if (question.helperText) {
+          const helper = document.createElement("p");
+          helper.className = "text-[#94a3b3] text-xs";
+          helper.textContent = question.helperText;
+          wrapper.appendChild(helper);
+        }
+
+        const error = document.createElement("p");
+        error.className = "hidden text-xs text-red-400";
+        error.dataset.errorMessage = "true";
+        error.textContent = "Please provide a response.";
+        wrapper.appendChild(error);
+
+        questionContainer.appendChild(wrapper);
+      });
+    };
+
+    const getSelectedTemplateId = () =>
+      templateRadios.find((radio) => radio.checked)?.value ||
+      wizardState.selectedTemplateId;
+
+    const collectContextualAnswers = (showErrors = false) => {
+      const result: ContextualAnswers = {};
+      let isValid = true;
+
+      if (!questionContainer) {
+        return { answers: result, isValid };
+      }
+
+      const questionBlocks = Array.from(
+        questionContainer.querySelectorAll<HTMLElement>("[data-question-id]")
+      );
+
+      questionBlocks.forEach((block) => {
+        const questionId = block.getAttribute("data-question-id") ?? "";
+        const type = block.getAttribute("data-question-type");
+        const errorMessage = block.querySelector<HTMLElement>("[data-error-message]");
+
+        const markInvalid = () => {
+          isValid = false;
+          if (showErrors && errorMessage) {
+            errorMessage.classList.remove("hidden");
+          }
+        };
+
+        const clearInvalid = () => {
+          if (errorMessage) {
+            errorMessage.classList.add("hidden");
+          }
+        };
+
+        if (type === "text") {
+          const input = block.querySelector<HTMLInputElement | HTMLTextAreaElement>(
+            "textarea, input"
+          );
+          const value = input?.value.trim();
+          if (!value) {
+            markInvalid();
+          } else {
+            clearInvalid();
+            result[questionId] = value;
+          }
+        } else if (type === "select") {
+          const select = block.querySelector<HTMLSelectElement>("select");
+          const value = select?.value.trim();
+          if (!value) {
+            markInvalid();
+          } else {
+            clearInvalid();
+            result[questionId] = value;
+          }
+        } else if (type === "multi-select") {
+          const checked = Array.from(
+            block.querySelectorAll<HTMLInputElement>('input[type="checkbox"]:checked')
+          ).map((input) => input.value);
+          if (checked.length === 0) {
+            markInvalid();
+          } else {
+            clearInvalid();
+            result[questionId] = checked;
+          }
+        }
+      });
+
+      if (contextError) {
+        if (showErrors && !isValid) {
+          contextError.classList.remove("hidden");
+        } else if (isValid) {
+          contextError.classList.add("hidden");
+        }
+      }
+
+      return { answers: result, isValid };
+    };
+
+    templateRadios.forEach((radio) => {
+      radio.addEventListener("change", () => {
+        if (templateIdInput) {
+          templateIdInput.value = radio.value;
+        }
+        updateTemplateStyles();
+        if (templateError) {
+          templateError.classList.add("hidden");
+        }
+      });
+    });
+
+    if (toQuestionsButton) {
+      toQuestionsButton.addEventListener("click", () => {
+        const selectedId = getSelectedTemplateId();
+        const template = templates.find((item) => item.id === selectedId);
+
+        if (!selectedId || !template) {
+          if (templateError) {
+            templateError.classList.remove("hidden");
+          }
+          return;
+        }
+
+        if (templateIdInput) {
+          templateIdInput.value = selectedId;
+        }
+
+        if (wizardState.selectedTemplateId !== selectedId) {
+          wizardState.contextualAnswers = {};
+        }
+
+        wizardState.selectedTemplateId = selectedId;
+        renderTemplateSummary(template);
+        renderQuestions(template, wizardState.contextualAnswers);
+        setStep(2);
+      });
+    }
+
+    if (backToTemplatesButton) {
+      backToTemplatesButton.addEventListener("click", () => {
+        setStep(1);
+      });
+    }
+
+    if (backToQuestionsButton) {
+      backToQuestionsButton.addEventListener("click", () => {
+        setStep(2);
+      });
+    }
+
+    if (toDetailsButton) {
+      toDetailsButton.addEventListener("click", () => {
+        const template = templates.find(
+          (item) => item.id === wizardState.selectedTemplateId
+        );
+
+        if (!template) {
+          if (templateError) {
+            templateError.classList.remove("hidden");
+          }
+          setStep(1);
+          return;
+        }
+
+        const { answers, isValid } = collectContextualAnswers(true);
+        if (!isValid) {
+          return;
+        }
+
+        wizardState.contextualAnswers = answers;
+        setStep(3);
+      });
+    }
+
+    updateTemplateStyles();
+    setStep(1);
 
     if (
       !form ||
@@ -293,6 +849,65 @@ if (Astro.cookies.has("__session")) {
           (diagram): diagram is DiagramId => isValidDiagramId(diagram)
         );
 
+        const templateId =
+          templateIdInput?.value || wizardState.selectedTemplateId;
+        const selectedTemplate = templates.find(
+          (template) => template.id === templateId
+        );
+
+        if (!selectedTemplate) {
+          submitButton.disabled = false;
+          buttonText.textContent = "Create Project";
+          loadingSpinner.classList.add("hidden");
+          setStep(1);
+          if (templateError) {
+            templateError.classList.remove("hidden");
+          }
+          return;
+        }
+
+        const { answers: contextualAnswerMap, isValid } =
+          collectContextualAnswers(true);
+
+        if (!isValid) {
+          submitButton.disabled = false;
+          buttonText.textContent = "Create Project";
+          loadingSpinner.classList.add("hidden");
+          setStep(2);
+          return;
+        }
+
+        wizardState.contextualAnswers = contextualAnswerMap;
+
+        const structuredAnswers = selectedTemplate.followUpQuestions.map(
+          (question) => {
+            const answer = contextualAnswerMap[question.id];
+            return {
+              id: question.id,
+              question: question.question,
+              answer: Array.isArray(answer) ? answer : answer ?? "",
+            };
+          }
+        );
+
+        const templatePayload = {
+          id: selectedTemplate.id,
+          name: selectedTemplate.name,
+          description: selectedTemplate.description,
+          vertical: selectedTemplate.vertical,
+          recommendedTechStack: selectedTemplate.recommendedTechStack,
+        };
+
+        const baseWorkerPayload = {
+          project: {
+            name: projectName,
+            description: projectDescription,
+            keyObjectives,
+          },
+          template: templatePayload,
+          contextualAnswers: structuredAnswers,
+        };
+
         // Show progress for selected diagrams
         if (validDiagramIds.length > 0) {
           renderProgress(
@@ -300,13 +915,6 @@ if (Astro.cookies.has("__session")) {
             createPendingAIAnalysis(validDiagramIds)
           );
         }
-
-        // Create the AI request text
-        const aiRequestText = `Project Name: ${projectName}
-
-Project Description: ${projectDescription}
-
-Key Objectives: ${keyObjectives}`;
 
         // First, create the project in Firestore
         const projectResponse = await fetch("/api/projects/create", {
@@ -358,6 +966,8 @@ Key Objectives: ${keyObjectives}`;
             keyObjectives: keyObjectives,
             image: projectImage,
             selectedDiagrams: validDiagramIds,
+            template: templatePayload,
+            contextualAnswers: structuredAnswers,
           })
         );
 
@@ -384,7 +994,7 @@ Key Objectives: ${keyObjectives}`;
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({
-                text: aiRequestText,
+                ...baseWorkerPayload,
                 selectedDiagrams: [diagramId],
               }),
             });

@@ -26,7 +26,13 @@ describe("aiGenerationService", () => {
 
     const result = await generateAIContent(
       "mvp",
-      { text: "Build an app" },
+      {
+        project: {
+          name: "Docucraft",
+          description: "Generate documentation diagrams",
+          keyObjectives: "Automate diagrams",
+        },
+      },
       "test-key",
       factory,
     );
@@ -36,7 +42,7 @@ describe("aiGenerationService", () => {
     expect(recordedRequests.length).toBe(1);
     expect(recordedRequests[0]?.model).toBe("gemini-2.5-flash-lite");
     expect(recordedRequests[0]?.contents).toContain(PROMPT_CONFIG.mvp.prompt);
-    expect(recordedRequests[0]?.contents).toContain("Build an app");
+    expect(recordedRequests[0]?.contents).toContain("Project Name: Docucraft");
   });
 
   it("throws when the prompt key is unknown", async () => {
@@ -72,5 +78,57 @@ describe("aiGenerationService", () => {
     expect(getPromptFormat("architecture")).toBe("mermaid");
     expect(isPromptKey("kanban")).toBe(true);
     expect(isPromptKey("not-real")).toBe(false);
+  });
+
+  it("includes template metadata and contextual answers when building prompts", async () => {
+    const recordedRequests: Array<{ contents: string }> = [];
+
+    const factory: ClientFactory = () => ({
+      models: {
+        generateContent: async (request) => {
+          recordedRequests.push({ contents: request.contents });
+          return { text: "ok" };
+        },
+      },
+    });
+
+    await generateAIContent(
+      "architecture",
+      {
+        project: {
+          name: "Retail Platform",
+          description: "E-commerce storefront",
+          keyObjectives: "Scale to global customers",
+        },
+        template: {
+          id: "template-1",
+          name: "Storefront",
+          description: "Retail focused",
+          vertical: "Retail",
+          recommendedTechStack: {
+            frontend: ["Next.js"],
+            backend: ["NestJS"],
+            database: ["PostgreSQL"],
+            infrastructure: ["Vercel"],
+            notes: ["Enable localisation"],
+          },
+        },
+        contextualAnswers: [
+          {
+            id: "catalog",
+            question: "Catalogue size",
+            answer: "1,000 products",
+          },
+        ],
+      },
+      "key",
+      factory,
+    );
+
+    expect(recordedRequests.length).toBe(1);
+    const contents = recordedRequests[0]?.contents ?? "";
+    expect(contents).toContain("Template: Storefront (Retail)");
+    expect(contents).toContain("Frontend Stack: Next.js");
+    expect(contents).toContain("- Catalogue size: 1,000 products");
   });
 });
