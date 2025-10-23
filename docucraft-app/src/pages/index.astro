@@ -1,8 +1,6 @@
 ---
 import { app } from "../firebase/server";
 import { getAuth } from "firebase-admin/auth";
-import { getFirestore } from "firebase-admin/firestore";
-import { FIRESTORE_COLLECTIONS } from "@/constants/firestore";
 import MainLayout from "@layouts/MainLayout.astro";
 import ProjectCard from "@/components/ProjectCard.astro";
 import ButtonNavigation from "@/components/ButtonNavigation.astro";
@@ -10,9 +8,9 @@ import LoadingSpinner from "@/components/LoadingSpinner.astro";
 import ErrorMessage from "@/components/ErrorMessage.astro";
 import EmptyState from "@/components/EmptyState.astro";
 import type { Project } from "@/types/Project";
+import { getProjectsForUser } from "@/server/projectService";
 
 const auth = getAuth(app);
-const db = getFirestore(app);
 
 /* Verificar la sesión actual */
 if (!Astro.cookies.has("__session")) {
@@ -51,16 +49,8 @@ let error: string | null = null;
 
 try {
   if (user.uid) {
-    const projectsRef = db
-      .collection(FIRESTORE_COLLECTIONS.USER_PROJECTS)
-      .doc(user.uid)
-      .collection(FIRESTORE_COLLECTIONS.PROJECTS);
-    const snapshot = await projectsRef.orderBy("createdAt", "desc").get();
-
-    projects = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as Project[];
+    const { projects: fetchedProjects } = await getProjectsForUser(user.uid);
+    projects = fetchedProjects;
   }
 } catch (err) {
   console.error("Error fetching projects:", err);

@@ -4,17 +4,15 @@ import MainLayout from "@layouts/MainLayout.astro";
 import ErrorMessage from "@/components/ErrorMessage.astro";
 import { app } from "@/firebase/server";
 import { getAuth } from "firebase-admin/auth";
-import { getFirestore } from "firebase-admin/firestore";
-import { FIRESTORE_COLLECTIONS } from "@/constants/firestore";
 import { transformAIResponseToAIAnalysis } from "@/utils/validation";
 import type { Project } from "@/types/Project";
 import {
   DIAGRAM_CONFIG,
   type DiagramId,
 } from "@/utils/aiAnalysis";
+import { getProjectForUser } from "@/server/projectService";
 
 const auth = getAuth(app);
-const db = getFirestore(app);
 const id = Astro.params.id as string;
 
 // Get current user
@@ -34,15 +32,10 @@ let project: Project | null = null;
 let error: string | null = null;
 
 try {
-  const docRef = db
-    .collection(FIRESTORE_COLLECTIONS.USER_PROJECTS)
-    .doc(user.uid)
-    .collection(FIRESTORE_COLLECTIONS.PROJECTS)
-    .doc(id);
-  const docSnap = await docRef.get();
+  const { project: fetchedProject } = await getProjectForUser(user.uid, id);
 
-  if (docSnap.exists) {
-    project = { id: docSnap.id, ...docSnap.data() } as Project;
+  if (fetchedProject) {
+    project = fetchedProject;
   }
 } catch (err) {
   console.error("Error fetching project:", err);
