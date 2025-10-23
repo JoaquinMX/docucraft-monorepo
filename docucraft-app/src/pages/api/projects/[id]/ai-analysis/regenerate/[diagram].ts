@@ -1,6 +1,4 @@
 import type { APIRoute } from "astro";
-import { app } from "@/firebase/server";
-import { getAuth } from "firebase-admin/auth";
 import { FirestoreServerService } from "@/services/firestore-server";
 import type { AIAnalysis } from "@/types/AIAnalysis";
 import type { DiagramId } from "@/utils/aiAnalysis";
@@ -10,6 +8,7 @@ import {
   extractPartialAIAnalysisFromWorker,
   isValidDiagramId,
 } from "@/utils/aiAnalysis";
+import { guardSession } from "@/server/auth/session";
 
 const WORKER_ENDPOINT =
   import.meta.env.WORKER_URL || import.meta.env.PUBLIC_WORKER_URL;
@@ -20,35 +19,13 @@ export const POST: APIRoute = async ({ params, cookies }) => {
   let diagramIdForCatch: DiagramId | undefined;
 
   try {
-    const sessionCookie = cookies.get("__session")?.value;
-    if (!sessionCookie) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Authentication required" }),
-        {
-          status: 401,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+    const session = await guardSession(cookies);
+    if (!session.ok) {
+      return session.response;
     }
 
-    const auth = getAuth(app);
-    let user;
-    let isAnonymous = false;
-
-    try {
-      const decodedCookie = await auth.verifySessionCookie(sessionCookie);
-      user = await auth.getUser(decodedCookie.uid);
-      userId = user.uid;
-      isAnonymous = user.providerData.length === 0;
-    } catch (error) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Invalid authentication" }),
-        {
-          status: 401,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-    }
+    const { user, isAnonymous } = session;
+    userId = user.uid;
 
     if (isAnonymous) {
       return new Response(

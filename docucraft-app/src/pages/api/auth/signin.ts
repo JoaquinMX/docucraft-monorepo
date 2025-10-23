@@ -1,9 +1,8 @@
 import type { APIRoute } from "astro";
-import { app } from "../../../firebase/server";
-import { getAuth } from "firebase-admin/auth";
+import { getServerAuth } from "@/server/auth/session";
 
 export const GET: APIRoute = async ({ request, cookies, redirect }) => {
-  const auth = getAuth(app);
+  const auth = getServerAuth();
 
   /* Obtener el token de las cabeceras de la solicitud */
   const idToken = request.headers.get("Authorization")?.split("Bearer ")[1];

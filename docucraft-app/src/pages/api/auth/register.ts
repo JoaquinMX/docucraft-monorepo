@@ -1,13 +1,12 @@
 import type { APIRoute } from "astro";
-import { getAuth } from "firebase-admin/auth";
-import { app } from "../../../firebase/server";
 import { FirestoreServerService } from "@/services/firestore-server";
 import { validateProjectData, transformAIResponseToAIAnalysis } from "@/utils/validation";
 import { sanitizeProjectImageInput } from "@/utils/project";
 import type { Project } from "@/types/Project";
+import { getServerAuth } from "@/server/auth/session";
 
 export const POST: APIRoute = async ({ request, cookies }) => {
-  const auth = getAuth(app);
+  const auth = getServerAuth();
 
   try {
     /* Obtener los datos del formulario */

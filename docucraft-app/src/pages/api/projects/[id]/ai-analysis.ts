@@ -1,50 +1,16 @@
 import type { APIRoute } from "astro";
-import { app } from "@/firebase/server";
-import { getAuth } from "firebase-admin/auth";
 import { FirestoreServerService } from "@/services/firestore-server";
 import { validateAIAnalysis } from "@/utils/validation";
+import { guardSession } from "@/server/auth/session";
 
 export const PUT: APIRoute = async ({ params, request, cookies }) => {
   try {
-    // Check authentication
-    const sessionCookie = cookies.get("__session")?.value;
-    if (!sessionCookie) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Authentication required",
-        }),
-        {
-          status: 401,
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
+    const session = await guardSession(cookies);
+    if (!session.ok) {
+      return session.response;
     }
 
-    const auth = getAuth(app);
-    let user;
-    let isAnonymous = false;
-
-    try {
-      const decodedCookie = await auth.verifySessionCookie(sessionCookie);
-      user = await auth.getUser(decodedCookie.uid);
-      isAnonymous = user.providerData.length === 0;
-    } catch (error) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Invalid authentication",
-        }),
-        {
-          status: 401,
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-    }
+    const { user, isAnonymous } = session;
 
     const projectId = params.id;
 
