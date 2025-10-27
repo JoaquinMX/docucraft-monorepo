@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import { FirestoreServerService } from "@/services/firestore-server";
+import { firestoreServerAdapter } from "@/services/firestore/server";
 import type { AIAnalysis } from "@/types/AIAnalysis";
 import type { DiagramId } from "@/utils/aiAnalysis";
 import {
@@ -65,7 +65,7 @@ export const POST: APIRoute = async ({ params, cookies }) => {
 
     projectIdForCatch = projectId;
 
-    const project = await FirestoreServerService.getProject(
+    const project = await firestoreServerAdapter.getProject(
       user.uid,
       projectId
     );
@@ -86,7 +86,7 @@ export const POST: APIRoute = async ({ params, cookies }) => {
 
     const aiRequestText = `Project Name: ${project.name}\n\nProject Description: ${project.description}\n\nKey Objectives: ${project.keyObjectives}`;
 
-    await FirestoreServerService.updatePartialAIAnalysis(
+    await firestoreServerAdapter.updatePartialAIAnalysis(
       user.uid,
       projectId,
       createPendingAIAnalysis([diagramId])
@@ -106,7 +106,7 @@ export const POST: APIRoute = async ({ params, cookies }) => {
         [DIAGRAM_CONFIG[diagramId].statusField]: "failed",
       } as Partial<AIAnalysis>;
 
-      await FirestoreServerService.updatePartialAIAnalysis(
+      await firestoreServerAdapter.updatePartialAIAnalysis(
         user.uid,
         projectId,
         failureStatus
@@ -130,7 +130,7 @@ export const POST: APIRoute = async ({ params, cookies }) => {
       workerJson
     );
 
-    await FirestoreServerService.updatePartialAIAnalysis(
+    await firestoreServerAdapter.updatePartialAIAnalysis(
       user.uid,
       projectId,
       partialUpdate
@@ -153,7 +153,7 @@ export const POST: APIRoute = async ({ params, cookies }) => {
       } as Partial<AIAnalysis>;
 
       try {
-        await FirestoreServerService.updatePartialAIAnalysis(
+        await firestoreServerAdapter.updatePartialAIAnalysis(
           userId,
           projectIdForCatch,
           failureStatus

@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import { FirestoreServerService } from "@/services/firestore-server";
+import { firestoreServerAdapter } from "@/services/firestore/server";
 import { validateUserStory } from "@/utils/validation";
 import type { UserStory } from "@/types/AIAnalysis";
 import { guardSession } from "@/server/auth/session";
@@ -102,10 +102,10 @@ export const PUT: APIRoute = async ({ params, request, cookies }) => {
     }
 
     // Update the project's user stories for authenticated users only
-    await FirestoreServerService.updatePartialAIAnalysis(
+    await firestoreServerAdapter.updatePartialAIAnalysis(
       user.uid,
       projectId,
-      { userStories: userStoriesData, userStoriesStatus: 'completed' }
+      { userStories: userStoriesData, userStoriesStatus: "completed" }
     );
 
     return new Response(
