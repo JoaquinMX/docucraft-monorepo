@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import { FirestoreServerService } from "@/services/firestore-server";
+import { firestoreServerAdapter } from "@/services/firestore/server";
 import { validateProjectData, transformAIResponseToAIAnalysis } from "@/utils/validation";
 import { sanitizeProjectImageInput } from "@/utils/project";
 import type { Project } from "@/types/Project";
@@ -71,7 +71,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
           const imageId = sanitizeProjectImageInput(projectData.image);
 
           // Save project to Firestore
-          projectId = await FirestoreServerService.createProject(
+          projectId = await firestoreServerAdapter.createProject(
             user.uid,
             firestoreProjectData,
             imageId

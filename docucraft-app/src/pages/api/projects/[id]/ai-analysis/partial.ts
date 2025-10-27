@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import { FirestoreServerService } from "@/services/firestore-server";
+import { firestoreServerAdapter } from "@/services/firestore/server";
 import { validatePartialAIAnalysis } from "@/utils/validation";
 import { guardSession } from "@/server/auth/session";
 
@@ -67,7 +67,7 @@ export const PUT: APIRoute = async ({ params, request, cookies }) => {
       );
     }
 
-    await FirestoreServerService.updatePartialAIAnalysis(
+    await firestoreServerAdapter.updatePartialAIAnalysis(
       user.uid,
       projectId,
       partialAIAnalysis

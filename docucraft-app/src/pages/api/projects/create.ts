@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import { FirestoreServerService } from "@/services/firestore-server";
+import { firestoreServerAdapter } from "@/services/firestore/server";
 import type { Project } from "@/types/Project";
 import { DEFAULT_PROJECT_IMAGE_ID } from "@/constants/images";
 import { sanitizeProjectImageInput } from "@/utils/project";
@@ -101,7 +101,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     };
 
     // Save to Firestore for authenticated users only
-    const projectId = await FirestoreServerService.createProject(
+    const projectId = await firestoreServerAdapter.createProject(
       user.uid,
       projectData,
       sanitizedImageId

@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import { FirestoreServerService } from "@/services/firestore-server";
+import { firestoreServerAdapter } from "@/services/firestore/server";
 import { validateAIAnalysis } from "@/utils/validation";
 import { guardSession } from "@/server/auth/session";
 
@@ -83,7 +83,7 @@ export const PUT: APIRoute = async ({ params, request, cookies }) => {
     }
 
     // Update the project with AI analysis for authenticated users only
-    await FirestoreServerService.updateAIAnalysis(
+    await firestoreServerAdapter.updateAIAnalysis(
       user.uid,
       projectId,
       aiAnalysis

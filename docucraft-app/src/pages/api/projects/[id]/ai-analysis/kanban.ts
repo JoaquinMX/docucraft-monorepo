@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import { FirestoreServerService } from "@/services/firestore-server";
+import { firestoreServerAdapter } from "@/services/firestore/server";
 import { guardSession } from "@/server/auth/session";
 
 export const PUT: APIRoute = async ({ params, request, cookies }) => {
@@ -82,10 +82,10 @@ export const PUT: APIRoute = async ({ params, request, cookies }) => {
     }
 
     // Update the project's kanban board for authenticated users only
-    await FirestoreServerService.updatePartialAIAnalysis(
+    await firestoreServerAdapter.updatePartialAIAnalysis(
       user.uid,
       projectId,
-      { kanban: kanbanData.trim(), kanbanStatus: 'completed' }
+      { kanban: kanbanData.trim(), kanbanStatus: "completed" }
     );
 
     return new Response(
