@@ -2,8 +2,7 @@ import { Bool, OpenAPIRoute } from "chanfana";
 import { z } from "zod";
 import { AIRequest, AIResponse, AppContext } from "../types";
 import { env } from "hono/adapter";
-import { generateAIContent } from "../services/aiGenerationService";
-import { formatDiagramResponse } from "../services/aiResponseFormatter";
+import { generateDiagram } from "../use-cases/generateDiagram";
 
 type Env = {
   GOOGLE_AI_STUDIO_TOKEN: string;
@@ -49,21 +48,40 @@ export class AiCreateKanban extends OpenAPIRoute {
     const aiRequest = data.body;
     const { GOOGLE_AI_STUDIO_TOKEN } = env(c) as Env;
 
-    const rawText = await generateAIContent("kanban", aiRequest, GOOGLE_AI_STUDIO_TOKEN);
-    const formatted = formatDiagramResponse("mermaid", rawText);
+    const result = await generateDiagram({
+      diagramId: "kanban",
+      request: aiRequest,
+      apiKey: GOOGLE_AI_STUDIO_TOKEN,
+    });
+
+    if (!result.success) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          status: result.status,
+          error: result.error,
+        }),
+        {
+          status: 400,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      );
+    }
 
     return new Response(
       JSON.stringify({
         success: true,
         aiResponse: {
-          text: formatted,
+          text: result.result.text,
         },
       }),
       {
         headers: {
           "Content-Type": "application/json",
         },
-      }
+      },
     );
   }
 }

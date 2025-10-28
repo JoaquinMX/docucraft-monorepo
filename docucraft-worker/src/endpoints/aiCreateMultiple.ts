@@ -3,11 +3,9 @@ import { z } from "zod";
 import { AIRequest, AIResponse, AppContext } from "../types";
 import { env } from "hono/adapter";
 import {
-  generateAIContent,
-  getPromptFormat,
-  isPromptKey,
-} from "../services/aiGenerationService";
-import { formatDiagramResponse } from "../services/aiResponseFormatter";
+  generateSelectedDiagrams,
+  type DiagramGenerationResult,
+} from "../use-cases/generateDiagram";
 
 type Env = {
   GOOGLE_AI_STUDIO_TOKEN: string;
@@ -55,39 +53,53 @@ export class AiCreateMultiple extends OpenAPIRoute {
     const { GOOGLE_AI_STUDIO_TOKEN } = env(c) as Env;
     const selectedDiagrams = aiRequest.selectedDiagrams || [];
 
-    const results: Record<string, { success: boolean; result?: z.infer<typeof AIResponse>; error?: string; status: 'pending' | 'completed' | 'failed' }> = {};
+    const generationResults = await generateSelectedDiagrams({
+      diagramIds: selectedDiagrams,
+      request: aiRequest,
+      apiKey: GOOGLE_AI_STUDIO_TOKEN,
+    });
 
-    // Process diagrams sequentially
-    for (const diagramId of selectedDiagrams) {
-      try {
-        if (!isPromptKey(diagramId)) {
-          results[diagramId] = {
-            success: false,
-            error: `Unknown diagram type: ${diagramId}`,
-            status: 'failed',
-          };
-          continue;
-        }
+    const results: Record<
+      string,
+      {
+        success: boolean;
+        result?: z.infer<typeof AIResponse>;
+        error?: string;
+        status: 'pending' | 'completed' | 'failed';
+      }
+    > = {};
 
-        const format = getPromptFormat(diagramId);
-        const rawText = await generateAIContent(
-          diagramId,
-          aiRequest,
-          GOOGLE_AI_STUDIO_TOKEN,
-        );
-        const formatted = formatDiagramResponse(format, rawText);
-
-        results[diagramId] = {
+    const mapResult = (result: DiagramGenerationResult): {
+      success: boolean;
+      result?: z.infer<typeof AIResponse>;
+      error?: string;
+      status: 'pending' | 'completed' | 'failed';
+    } => {
+      if (result.success) {
+        return {
           success: true,
-          result: { text: formatted },
-          status: 'completed',
+          result: { text: result.result.text },
+          status: result.status,
         };
-      } catch (error) {
-        console.error(`Error generating ${diagramId}:`, error);
+      }
+
+      return {
+        success: false,
+        error: result.error,
+        status: result.status,
+      };
+    };
+
+    for (const diagramId of selectedDiagrams) {
+      const result = generationResults[diagramId];
+
+      if (result) {
+        results[diagramId] = mapResult(result);
+      } else {
         results[diagramId] = {
           success: false,
-          error: error instanceof Error ? error.message : "Unknown error",
           status: 'failed',
+          error: `No result for diagram: ${diagramId}`,
         };
       }
     }
