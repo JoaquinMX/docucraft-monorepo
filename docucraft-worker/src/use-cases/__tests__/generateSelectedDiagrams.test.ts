@@ -38,4 +38,43 @@ describe("generateSelectedDiagrams", () => {
     expect(result.architecture?.diagramFormat).toBe("mermaid");
     expect(result.architecture?.result.text).toBe("graph TD;A-->B");
   });
+
+  it("executes diagram generation concurrently", async () => {
+    const delays: Array<{ resolve: () => void }> = [];
+    let activeCalls = 0;
+    let maxActiveCalls = 0;
+
+    const baseFactory: ClientFactory = () => ({
+      models: {
+        generateContent: () => {
+          activeCalls += 1;
+          maxActiveCalls = Math.max(maxActiveCalls, activeCalls);
+
+          return new Promise<{ text: string }>((resolve) => {
+            delays.push({
+              resolve: () => {
+                activeCalls -= 1;
+                resolve({ text: "```mermaid\ngraph TD;A-->B\n```" });
+              },
+            });
+          });
+        },
+      },
+    });
+
+    const generationPromise = generateSelectedDiagrams({
+      diagramIds: ["architecture", "c4"],
+      request: { text: "Build an app" },
+      apiKey: "shared-key",
+      clientFactory: baseFactory,
+    });
+
+    expect(delays).toHaveLength(2);
+
+    delays.forEach(({ resolve }) => resolve());
+
+    await generationPromise;
+
+    expect(maxActiveCalls).toBeGreaterThan(1);
+  });
 });
