@@ -36,6 +36,12 @@ export function getPromptFormat(promptKey: PromptKey): DiagramFormat {
   return PROMPT_CONFIG[promptKey].format;
 }
 
+const MEMOIZED_CLIENT_FACTORY = Symbol("memoizedGoogleClientFactory");
+
+type MemoizedClientFactory = ClientFactory & {
+  [MEMOIZED_CLIENT_FACTORY]?: true;
+};
+
 type GoogleClient = {
   models: {
     generateContent: (
@@ -48,16 +54,53 @@ type GoogleClient = {
 
 export type ClientFactory = (apiKey: string) => GoogleClient;
 
-const defaultClientFactory: ClientFactory = (apiKey: string) =>
-  new GoogleGenAI({
-    apiKey,
-  });
+export const createMemoizedClientFactory = (
+  factory: ClientFactory = (apiKey: string) =>
+    new GoogleGenAI({
+      apiKey,
+    }),
+): ClientFactory => {
+  const cache = new Map<string, GoogleClient>();
+
+  const memoizedFactory: MemoizedClientFactory = (apiKey: string) => {
+    const cachedClient = cache.get(apiKey);
+
+    if (cachedClient) {
+      return cachedClient;
+    }
+
+    const client = factory(apiKey);
+    cache.set(apiKey, client);
+
+    return client;
+  };
+
+  memoizedFactory[MEMOIZED_CLIENT_FACTORY] = true;
+
+  return memoizedFactory;
+};
+
+const defaultClientFactory = createMemoizedClientFactory();
+
+export const ensureMemoizedClientFactory = (
+  factory: ClientFactory | undefined,
+): ClientFactory | undefined => {
+  if (!factory) {
+    return undefined;
+  }
+
+  if ((factory as MemoizedClientFactory)[MEMOIZED_CLIENT_FACTORY]) {
+    return factory;
+  }
+
+  return createMemoizedClientFactory(factory);
+};
 
 export async function generateAIContent(
   promptKey: PromptKey,
   request: Pick<AIRequestPayload, "text">,
   apiKey: string,
-  clientFactory: ClientFactory = defaultClientFactory,
+  clientFactory?: ClientFactory,
 ): Promise<string> {
   const configuration = PROMPT_CONFIG[promptKey];
 
@@ -65,7 +108,8 @@ export async function generateAIContent(
     throw new Error(`Unknown prompt key: ${promptKey}`);
   }
 
-  const ai = clientFactory(apiKey);
+  const factory = clientFactory ?? defaultClientFactory;
+  const ai = factory(apiKey);
 
   const response = await ai.models.generateContent({
     model: MODEL_NAME,

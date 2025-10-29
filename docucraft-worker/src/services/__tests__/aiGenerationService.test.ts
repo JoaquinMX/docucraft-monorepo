@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import {
   PROMPT_CONFIG,
+  createMemoizedClientFactory,
   generateAIContent,
   getPromptFormat,
   isPromptKey,
@@ -65,6 +66,30 @@ describe("aiGenerationService", () => {
     } catch (error) {
       expect((error as Error).message).toBe("AI response did not include text output");
     }
+  });
+
+  it("reuses memoized clients for the same API key", async () => {
+    let createCount = 0;
+    const baseFactory: ClientFactory = (apiKey) => {
+      createCount += 1;
+
+      return {
+        models: {
+          generateContent: async () => ({
+            text: apiKey,
+          }),
+        },
+      };
+    };
+
+    const memoized = createMemoizedClientFactory(baseFactory);
+
+    const first = await generateAIContent("mvp", { text: "One" }, "memo-key", memoized);
+    const second = await generateAIContent("mvp", { text: "Two" }, "memo-key", memoized);
+
+    expect(first).toBe("memo-key");
+    expect(second).toBe("memo-key");
+    expect(createCount).toBe(1);
   });
 
   it("exposes helper utilities for prompt metadata", () => {

@@ -1,5 +1,6 @@
 import type { AIRequestPayload } from "../types";
 import {
+  ensureMemoizedClientFactory,
   generateAIContent,
   getPromptFormat,
   isPromptKey,
@@ -53,7 +54,13 @@ export async function generateDiagram({
 
   try {
     const diagramFormat = getPromptFormat(diagramId);
-    const rawText = await generateAIContent(diagramId, request, apiKey, clientFactory);
+    const resolvedFactory = ensureMemoizedClientFactory(clientFactory);
+    const rawText = await generateAIContent(
+      diagramId,
+      request,
+      apiKey,
+      resolvedFactory,
+    );
     const formatted = formatDiagramResponse(diagramFormat, rawText);
 
     return {
@@ -88,13 +95,14 @@ export async function generateSelectedDiagrams({
   clientFactory,
 }: GenerateSelectedDiagramsParams): Promise<Record<string, DiagramGenerationResult>> {
   const results: Record<string, DiagramGenerationResult> = {};
+  const memoizedFactory = ensureMemoizedClientFactory(clientFactory);
 
   for (const diagramId of diagramIds) {
     results[diagramId] = await generateDiagram({
       diagramId,
       request,
       apiKey,
-      clientFactory,
+      clientFactory: memoizedFactory,
     });
   }
 
