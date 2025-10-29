@@ -1,17 +1,12 @@
 import { Bool, OpenAPIRoute } from "chanfana";
 import { z } from "zod";
 import { env } from "hono/adapter";
+import { createStripeAdapter, PaymentIntentResponseSchema } from "../adapters/stripe";
 import type { AppContext } from "../types";
 
 type Env = {
   STRIPE_SECRET_KEY: string;
 };
-
-const PaymentIntentResponseSchema = z.object({
-  id: z.string(),
-  client_secret: z.string().optional(),
-  status: z.string(),
-});
 
 const PaymentIntentRequestSchema = z.object({
   amount: z.number().positive().optional(),
@@ -91,48 +86,21 @@ export class CreatePaymentIntent extends OpenAPIRoute {
       );
     }
 
-    const body = new URLSearchParams();
-    body.append("amount", amountInMinorUnits.toString());
-    body.append("currency", currency);
-    body.append("automatic_payment_methods[enabled]", "true");
-
-    const stripeResponse = await fetch("https://api.stripe.com/v1/payment_intents", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${STRIPE_SECRET_KEY}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body,
+    const stripe = createStripeAdapter({
+      apiKey: STRIPE_SECRET_KEY,
     });
 
-    const stripeData = await stripeResponse.json<unknown>();
+    const result = await stripe.createPaymentIntent({
+      amount: amountInMinorUnits,
+      currency,
+      automaticPaymentMethodsEnabled: true,
+    });
 
-    if (!stripeResponse.ok) {
-      const errorMessage =
-        (stripeData as { error?: { message?: string } })?.error?.message ??
-        "Failed to create payment intent";
-
+    if (!result.ok) {
       return new Response(
         JSON.stringify({
           success: false,
-          error: { message: errorMessage },
-        }),
-        {
-          status: 400,
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-    }
-
-    const parsedStripeData = PaymentIntentResponseSchema.safeParse(stripeData);
-
-    if (!parsedStripeData.success) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: { message: "Unexpected Stripe response structure" },
+          error: { message: result.error.message },
         }),
         {
           status: 400,
@@ -146,7 +114,7 @@ export class CreatePaymentIntent extends OpenAPIRoute {
     return new Response(
       JSON.stringify({
         success: true,
-        paymentIntent: parsedStripeData.data,
+        paymentIntent: result.paymentIntent,
       }),
       {
         headers: {
