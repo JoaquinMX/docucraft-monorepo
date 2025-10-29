@@ -16,30 +16,6 @@ const serviceAccount = {
 };
 
 const initApp = () => {
-  console.info("Loading service account from environment variables.");
-
-  // Debug: Log environment variable availability
-  console.info("Environment variables check:", {
-    FIREBASE_PROJECT_ID: (process.env.FIREBASE_PROJECT_ID || import.meta.env.FIREBASE_PROJECT_ID)
-      ? "✅ Set"
-      : "❌ Missing",
-    FIREBASE_PRIVATE_KEY_ID: (process.env.FIREBASE_PRIVATE_KEY_ID || import.meta.env.FIREBASE_PRIVATE_KEY_ID)
-      ? "✅ Set"
-      : "❌ Missing",
-    FIREBASE_PRIVATE_KEY: (process.env.FIREBASE_PRIVATE_KEY || import.meta.env.FIREBASE_PRIVATE_KEY)
-      ? "✅ Set"
-      : "❌ Missing",
-    FIREBASE_CLIENT_EMAIL: (process.env.FIREBASE_CLIENT_EMAIL || import.meta.env.FIREBASE_CLIENT_EMAIL)
-      ? "✅ Set"
-      : "❌ Missing",
-  });
-
-  // Debug: Log the actual project_id value (safely)
-  console.info(
-    "project_id value:",
-    JSON.stringify(process.env.FIREBASE_PROJECT_ID || import.meta.env.FIREBASE_PROJECT_ID)
-  );
-
   return initializeApp({
     credential: cert(serviceAccount as ServiceAccount),
   });
