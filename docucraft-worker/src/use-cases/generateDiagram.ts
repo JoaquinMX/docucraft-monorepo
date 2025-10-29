@@ -94,17 +94,20 @@ export async function generateSelectedDiagrams({
   apiKey,
   clientFactory,
 }: GenerateSelectedDiagramsParams): Promise<Record<string, DiagramGenerationResult>> {
-  const results: Record<string, DiagramGenerationResult> = {};
   const memoizedFactory = ensureMemoizedClientFactory(clientFactory);
 
-  for (const diagramId of diagramIds) {
-    results[diagramId] = await generateDiagram({
-      diagramId,
-      request,
-      apiKey,
-      clientFactory: memoizedFactory,
-    });
-  }
+  const entries = await Promise.all(
+    diagramIds.map(async (diagramId) => {
+      const result = await generateDiagram({
+        diagramId,
+        request,
+        apiKey,
+        clientFactory: memoizedFactory,
+      });
 
-  return results;
+      return [diagramId, result] as const;
+    }),
+  );
+
+  return Object.fromEntries(entries) as Record<string, DiagramGenerationResult>;
 }

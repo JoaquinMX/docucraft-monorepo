@@ -53,22 +53,6 @@ export class AiCreateMultiple extends OpenAPIRoute {
     const { GOOGLE_AI_STUDIO_TOKEN } = env(c) as Env;
     const selectedDiagrams = aiRequest.selectedDiagrams || [];
 
-    const generationResults = await generateSelectedDiagrams({
-      diagramIds: selectedDiagrams,
-      request: aiRequest,
-      apiKey: GOOGLE_AI_STUDIO_TOKEN,
-    });
-
-    const results: Record<
-      string,
-      {
-        success: boolean;
-        result?: z.infer<typeof AIResponse>;
-        error?: string;
-        status: 'pending' | 'completed' | 'failed';
-      }
-    > = {};
-
     const mapResult = (result: DiagramGenerationResult): {
       success: boolean;
       result?: z.infer<typeof AIResponse>;
@@ -90,19 +74,57 @@ export class AiCreateMultiple extends OpenAPIRoute {
       };
     };
 
-    for (const diagramId of selectedDiagrams) {
-      const result = generationResults[diagramId];
+    const generationResults = await generateSelectedDiagrams({
+      diagramIds: selectedDiagrams,
+      request: aiRequest,
+      apiKey: GOOGLE_AI_STUDIO_TOKEN,
+    });
 
-      if (result) {
-        results[diagramId] = mapResult(result);
-      } else {
-        results[diagramId] = {
-          success: false,
-          status: 'failed',
-          error: `No result for diagram: ${diagramId}`,
-        };
+    const settledResults = await Promise.allSettled(
+      selectedDiagrams.map(async (diagramId) => {
+        const result = generationResults[diagramId];
+
+        if (!result) {
+          throw new Error(`No result for diagram: ${diagramId}`);
+        }
+
+        return mapResult(result);
+      })
+    );
+
+    const results = selectedDiagrams.reduce<
+      Record<
+        string,
+        {
+          success: boolean;
+          result?: z.infer<typeof AIResponse>;
+          error?: string;
+          status: 'pending' | 'completed' | 'failed';
+        }
+      >
+    >((acc, diagramId, index) => {
+      const settled = settledResults[index];
+
+      if (settled?.status === 'fulfilled') {
+        acc[diagramId] = settled.value;
+        return acc;
       }
-    }
+
+      const reason = settled?.status === 'rejected' ? settled.reason : undefined;
+
+      acc[diagramId] = {
+        success: false,
+        status: 'failed',
+        error:
+          reason instanceof Error
+            ? reason.message
+            : typeof reason === 'string'
+              ? reason
+              : `No result for diagram: ${diagramId}`,
+      };
+
+      return acc;
+    }, {});
 
     return new Response(
       JSON.stringify({
