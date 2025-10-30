@@ -16,7 +16,8 @@
     "firebase": "^12.0.0",
     "firebase-admin": "^13.4.0",
     "mermaid": "^11.9.0",
-    "tailwindcss": "^4.1.11"
+    "tailwindcss": "^4.1.11",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "lighthouse": "^12.8.0"
