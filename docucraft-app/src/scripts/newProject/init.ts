@@ -6,6 +6,7 @@ import { getFormElements, hideError, hideProgress, renderProgress, setSubmitting
 import { getProjectFormValues, buildAIRequestText, storeProjectLocally, storeAIResponseLocally } from "./form";
 import { createProject, persistFailureStatus, persistPartialAIAnalysis } from "./projectApi";
 import { generateAIAnalyses } from "./aiOrchestrator";
+import { formatWorkerClientError } from "../../services/workerClient";
 import { subscribeToProgress } from "./progressSubscription";
 import type { NewProjectContext, ProjectCreationResponse } from "./types";
 
@@ -151,6 +152,16 @@ export function initNewProjectPage(context: NewProjectContext): void {
         onPartialUpdate: isAnonymous ? undefined : partialUpdateHandler,
         onFailureStatus: isAnonymous ? undefined : failureStatusHandler,
       });
+
+      if (!aiResult.success) {
+        const message = aiResult.error
+          ? formatWorkerClientError(aiResult.error)
+          : "We couldn't generate diagrams at this time. Please try again.";
+        showError(elements, message);
+        setSubmittingState(elements, false);
+        hideProgress(elements);
+        return;
+      }
 
       storeAIResponseLocally(aiResult);
 

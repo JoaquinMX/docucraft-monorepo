@@ -3,6 +3,11 @@ import {
   extractPartialAIAnalysisFromWorker,
 } from "../../utils/aiAnalysis";
 import type { DiagramId } from "../../utils/aiAnalysis";
+import {
+  createWorkerClient,
+  formatWorkerClientError,
+  type WorkerClientError,
+} from "../../services/workerClient";
 
 interface GenerateAIAnalysesOptions {
   diagramIds: DiagramId[];
@@ -24,6 +29,7 @@ interface GenerateAIAnalysesOptions {
 export interface AIAnalysisResult {
   success: boolean;
   results: Record<string, unknown>;
+  error?: WorkerClientError;
 }
 
 export async function generateAIAnalyses({
@@ -37,25 +43,38 @@ export async function generateAIAnalyses({
   onFailureStatus,
 }: GenerateAIAnalysesOptions): Promise<AIAnalysisResult> {
   const aggregatedResults: Record<string, unknown> = {};
+  let encounteredError: WorkerClientError | undefined;
+  const workerClient = createWorkerClient({
+    baseUrl: workerUrl,
+    fetchImpl: fetchFn,
+  });
 
   for (const diagramId of diagramIds) {
     try {
-      const response = await fetchFn(`${workerUrl}/api/ai`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          text: aiRequestText,
-          selectedDiagrams: [diagramId],
-        }),
+      const aiResponse = await workerClient.requestAIAnalysis({
+        text: aiRequestText,
+        selectedDiagrams: [diagramId],
       });
 
-      if (!response.ok) {
-        throw new Error(`AI service error: ${response.status}`);
+      if (!aiResponse.ok) {
+        encounteredError = encounteredError ?? aiResponse.error;
+        const message = formatWorkerClientError(aiResponse.error);
+
+        aggregatedResults[diagramId] = {
+          success: false,
+          error: message,
+          status: "failed",
+        };
+
+        if (!isAnonymous && projectId && onFailureStatus) {
+          const statusField = DIAGRAM_CONFIG[diagramId].statusField;
+          await onFailureStatus(diagramId, { [statusField]: "failed" });
+        }
+
+        continue;
       }
 
-      const aiResult = await response.json();
+      const aiResult = aiResponse.data;
       const diagramResult = aiResult?.results?.[diagramId];
 
       if (diagramResult) {
@@ -84,11 +103,20 @@ export async function generateAIAnalyses({
         const statusField = DIAGRAM_CONFIG[diagramId].statusField;
         await onFailureStatus(diagramId, { [statusField]: "failed" });
       }
+
+      if (!encounteredError) {
+        encounteredError = {
+          type: "unknown",
+          message,
+          cause: error,
+        };
+      }
     }
   }
 
   return {
-    success: true,
+    success: encounteredError ? false : true,
     results: aggregatedResults,
+    error: encounteredError,
   };
 }

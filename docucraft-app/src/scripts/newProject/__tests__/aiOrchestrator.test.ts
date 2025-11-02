@@ -10,6 +10,8 @@ describe("generateAIAnalyses", () => {
     const responses = [
       {
         ok: true,
+        status: 200,
+        statusText: "OK",
         async json() {
           return {
             results: {
@@ -24,6 +26,8 @@ describe("generateAIAnalyses", () => {
       },
       {
         ok: true,
+        status: 200,
+        statusText: "OK",
         async json() {
           return {
             results: {
@@ -60,6 +64,8 @@ describe("generateAIAnalyses", () => {
     });
 
     expect(callIndex).toBe(2);
+    expect(result.success).toBe(true);
+    expect(result.error).toBeUndefined();
     expect(result.results).toEqual({
       erd: {
         success: true,
@@ -85,7 +91,11 @@ describe("generateAIAnalyses", () => {
     let callIndex = 0;
     const fetchMock = async () => {
       callIndex += 1;
-      return { ok: false, status: 500 } as const;
+      return {
+        ok: false,
+        status: 500,
+        statusText: "Server Error",
+      } as const;
     };
 
     const partialUpdates: Array<[string, Record<string, unknown>]> = [];
@@ -107,6 +117,8 @@ describe("generateAIAnalyses", () => {
     });
 
     expect(callIndex).toBe(1);
+    expect(result.success).toBe(false);
+    expect(result.error).toMatchObject({ type: "http", status: 500 });
     expect(result.results.erd).toMatchObject({
       success: false,
       status: "failed",
