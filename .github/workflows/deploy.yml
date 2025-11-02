@@ -62,6 +62,12 @@ jobs:
           cd ${{ matrix.app }}
           bun install --frozen-lockfile
 
+      - name: Test
+        if: matrix.app == 'docucraft-app'
+        run: |
+          cd ${{ matrix.app }}
+          bun run test
+
       - name: Build
         if: matrix.app != 'docucraft-worker'
         run: |
