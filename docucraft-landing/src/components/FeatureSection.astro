@@ -1,0 +1,31 @@
+---
+import CustomH2 from "@/components/CustomH2.astro";
+import FeatureCapsule from "@/components/FeatureCapsule.astro";
+import FeatureRowLayout from "@/layouts/FeatureRowLayout.astro";
+
+interface Feature {
+  icon: string;
+  title: string;
+  path: string;
+}
+
+interface Props {
+  title: string;
+  features: Feature[];
+}
+
+const { title, features } = Astro.props;
+---
+
+<CustomH2 title={title} />
+<FeatureRowLayout>
+  {
+    features.map((feature) => (
+      <FeatureCapsule
+        icon={feature.icon}
+        title={feature.title}
+        path={feature.path}
+      />
+    ))
+  }
+</FeatureRowLayout>
