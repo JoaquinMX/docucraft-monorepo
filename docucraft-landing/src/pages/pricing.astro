@@ -3,15 +3,14 @@ import CustomH1 from "@/components/CustomH1.astro";
 import MainLayout from "@layouts/MainLayout.astro";
 import PricingCard from "@/components/PricingCard.astro";
 import ComparisonTable from "@/components/ComparisonTable.astro";
+import PricingGrid from "@/components/PricingGrid.astro";
 ---
 
 <MainLayout>
   <div class="px-4 lg:px-40 flex flex-1 justify-center py-5">
     <div class="layout-content-container flex flex-col max-w-[960px] flex-1">
       <CustomH1 title="Simple, transparent pricing" />
-      <div
-        class="grid grid-cols-[repeat(auto-fit,minmax(228px,1fr))] gap-2.5 px-4 py-3 @3xl:grid-cols-4"
-      >
+      <PricingGrid>
         <PricingCard
           title="Free"
           price="$0"
@@ -62,7 +61,7 @@ import ComparisonTable from "@/components/ComparisonTable.astro";
             "Custom integrations"
           ]}
         />
-      </div>
+      </PricingGrid>
       <h2
         class="text-[#0d151c] text-[22px] font-bold leading-tight tracking-[-0.015em] px-4 pb-3 pt-5"
       >
